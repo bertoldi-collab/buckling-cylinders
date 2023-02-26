@@ -43,6 +43,7 @@ from visualization import *
 from connectorBehavior import *
 import time
 import os
+import sys
 
 #Variable parameters
 #[[thickness, imper %, E_0, damping]]
