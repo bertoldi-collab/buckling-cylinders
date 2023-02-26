@@ -59,7 +59,6 @@ import os
 
 def printAB(string_):
     print >> sys.__stdout__, string_
-#end
 
 def delete_extra_files(jname, additional_ext = None):
     #delete extra files
@@ -241,33 +240,41 @@ class full_shell:
             step=odb.steps['Step-1']
         frames=step.frames
         initialframe = frames[1]
+        #f1 is used
         f1=open(self.project + eig_name + '_eigenvalues.txt','w')
-        f2=open(self.project + eig_name + '_displacement.txt','w')
-        f3=open(self.project + eig_name + '_parameters.txt','w')
-        #Get eigenvalues
+        # f2=open(self.project + eig_name + '_displacement.txt','w')
+        # f3=open(self.project + eig_name + '_parameters.txt','w')
+
+        #f1: Get eigenvalues
         for frame in frames:
             eig = frame.description
             f1.write(eig)
             f1.write('\n')
-        #Get displacement of center nodes during first mode
-        displacement = initialframe.fieldOutputs['U']
-        center = odb.rootAssembly.instances['MERGED-1'].nodeSets['CENTERNODES']
-        centerDisplacement = displacement.getSubset(region=center)
-        for v in centerDisplacement.values:
-            f2.write(str(v.magnitude))
-            f2.write('\n')
-        odb.close()
-
-        f3.write('H, R, t1, t2, theta, w, E1, E2, E_cap, h_ele\n')
-        f3.write(str(self.H)+' '+str(self.R)+' '+str(self.t1)+' '+str(self.t2)+' '+
-            str(self.theta)+' '+str(self.w)+' '+str(self.E1)+' '+str(self.E2)+' '+str(self.E_cap)+' '+str(self.h_element))
         f1.close()
-        f2.close()
-        f3.close()
+        
+        #f2: Get displacement of center nodes during first mode
+        # displacement = initialframe.fieldOutputs['U']
+        # center = odb.rootAssembly.instances['MERGED-1'].nodeSets['CENTERNODES']
+        # centerDisplacement = displacement.getSubset(region=center)
+        # for v in centerDisplacement.values:
+        #     f2.write(str(v.magnitude))
+        #     f2.write('\n')
+        # odb.close()
+
+        #f3: write parameters: changing this to write to data-out where it can be used
+        # props_all = np.array([self.a, self.b, self.c, self.d, self.alpha_11, self.alpha_22, final_temp])
+        props_all = np.array([self.H, self.R, self.t1, self.t2, self.theta, self.w, self.E1, self.E2, self.E_cap, self.h_element])
+        np.savetxt("../data_out/" + self.project + '_props.txt', props_all)
+        # f3.write('H, R, t1, t2, theta, w, E1, E2, E_cap, h_ele\n')
+        # f3.write(str(self.H)+' '+str(self.R)+' '+str(self.t1)+' '+str(self.t2)+' '+
+        #     str(self.theta)+' '+str(self.w)+' '+str(self.E1)+' '+str(self.E2)+' '+str(self.E_cap)+' '+str(self.h_element))
+        # f2.close()
+        # f3.close()
 
     def get_eig_idx(self, eig_name):
         f = open(self.project + eig_name + '_eigenvalues.txt','r')
         lines = f.readlines()
+        #finds first positive eigenvalue and returns the index (1-indexed)
         eig_idx = 1
         for i in range(len(lines)-1):
             eig = float(lines[i+1].split()[-1])
