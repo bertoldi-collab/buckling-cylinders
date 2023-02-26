@@ -1,0 +1,15 @@
+from collections import namedtuple
+import numpy as np
+
+geoProps = namedtuple('geoProps',['R','H','w','t','E'])
+geo_prop_four = geoProps(10, 18, 5, 0.56, 1.4)
+geo_prop_two = geoProps(8.8, 44.75, 5, 1.2, 1.4)
+
+geo_prop_four_old = geoProps(10, 18, 5, 0.54, 1.0)
+geo_prop_two_old = geoProps(8.8, 44.75, 5, 1.15, 1.0)
+geo_prop_three_old = geoProps(8, 20, 5, 0.5, 1.0)
+
+beamProps = namedtuple('beamProps',['base', 'height'])
+beam_prop_v112 = beamProps(5.79404699008849, 3.7670449798818)
+beam_prop_v112_eighth = beamProps(3.971594980027066, 1.8781385071582015)
+beam_prop_square = beamProps(4.0,4.0)

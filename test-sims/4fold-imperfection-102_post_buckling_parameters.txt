@@ -1,0 +1,2 @@
+H, R, t1, t2, theta, w, E1, E2, E_cap, h_ele, bdamp, imper, eig_idx, ncores
+25.0 10.0 0.4 0.4 3.14159265359 5.0 1.0 1.0 1.0 0.1875 0.00010.0016 1 12

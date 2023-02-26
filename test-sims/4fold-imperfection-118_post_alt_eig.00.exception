@@ -1,0 +1,28 @@
+<Description>
+   ***  ABAQUS/standard rank 0 received the SIGABRT signal
+</Description>
+
+
+<Memory>
+   <Current>             930 MB </Current>
+   <Physical>          32691 MB </Physical>
+   <Limit>             29421 MB </Limit>
+   <Virtual>       134217728 MB </Virtual>
+   <Accessible>        32691 MB </Accessible>
+   <Allocator>            DL    </Allocator>
+</Memory>
+
+<Directories>
+  <current> C:\Users\her482\AppData\Local\Temp\her482_4fold-imperfection-118_post_alt_eig_62424 </current> 
+    <indir> C:\Users\her482\Google Drive\research\abaqus modeling\yi-stuff\test-sims </indir> 
+   <outdir> C:\Users\her482\Google Drive\research\abaqus modeling\yi-stuff\test-sims </outdir>
+   <tmpdir> C:\Users\her482\AppData\Local\Temp\her482_4fold-imperfection-118_post_alt_eig_62424 </tmpdir>
+     <temp> C:\Users\her482\AppData\Local\Temp </temp>
+</Directories>
+
+<Installation>
+     <Version> 3DEXPERIENCE R2019x 6.19-1 </Version>
+       <Build>   2018_09_24-14.41.51 157541 </Build>
+  <Executable> C:\Program Files\Dassault Systemes\SimulationServices\V6R2019x\win_b64\code\bin\standard.exe </Executable>
+</Installation>
+
