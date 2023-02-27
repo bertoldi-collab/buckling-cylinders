@@ -13,6 +13,7 @@
 *.mdl
 *.msg
 *.odb
+*.odb_f
 *.prt
 *.sim
 *.simlog
