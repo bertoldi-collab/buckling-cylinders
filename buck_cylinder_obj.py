@@ -260,7 +260,7 @@ class full_shell:
         # for v in centerDisplacement.values:
         #     f2.write(str(v.magnitude))
         #     f2.write('\n')
-        # odb.close()
+        odb.close()
 
         #f3: write parameters: changing this to write to data-out where it can be used
         # props_all = np.array([self.a, self.b, self.c, self.d, self.alpha_11, self.alpha_22, final_temp])
@@ -828,9 +828,11 @@ class full_shell:
         s1.ArcByCenterEnds(center=(0.0, 0.0), direction=COUNTERCLOCKWISE,
             point1=(R*cos(0.5*pi-0.5*theta), R*sin(0.5*pi-0.5*theta)),
             point2=(0., R))
+        
         s2 = m.ConstrainedSketch(name='s2', sheetSize=200.0)
         s2.ArcByCenterEnds(center=(0.0, 0.0), direction=COUNTERCLOCKWISE,
             point1=(0., R),point2=(-R*cos(0.5*pi-0.5*theta), R*sin(0.5*pi-0.5*theta)))
+        
         s3 = m.ConstrainedSketch(name='s3', sheetSize=200.0)
         s3.ArcByCenterEnds(center=(0.0, 0.0), direction=COUNTERCLOCKWISE,
             point1=(-R*cos(0.5*pi-0.5*theta), R*sin(0.5*pi-0.5*theta)),
