@@ -153,7 +153,7 @@ class full_shell:
         self.post_process_lin_buckle(eig_name = '_lin_buckling')
         return jname
 
-    def make_nonlin_multi_buckle(self,bdamp, max_temp_mult = 0.6, num_steps = 10):
+    def make_nonlin_multi_buckle(self,bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None):
         eig_name = '_lin_buckling'
         self.bdamp = bdamp
 
@@ -161,7 +161,8 @@ class full_shell:
         temp_all = np.linspace(0, max_temp, num_steps + 1)[1:]
 
         self.make_geometry(nonlinear_model = True)
-        eig_idx = self.get_eig_idx(eig_name = eig_name)
+        if eig_idx is None:
+            eig_idx = self.get_eig_idx(eig_name = eig_name)
         self.finish_nonlinear_initial()
 
         self.finish_nonlinear_steps(temp_list = temp_all)
