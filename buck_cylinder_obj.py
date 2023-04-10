@@ -485,6 +485,9 @@ class full_shell:
         data_all = np.empty((num_freq_steps, 11))
         data_all[:] = np.nan
 
+        data_eig_val = np.empty((num_freq_steps, 11))
+        data_eig_val[:] = np.nan
+
         for i in range(num_freq_steps):
             idx = i + 1
             prev_step_name = 'Step-' + str(idx)
@@ -502,17 +505,23 @@ class full_shell:
             # printAB(his_region.historyOutputs)
             # printAB(his_region.historyOutputs['EIGFREQ'].data)
             out_his_eig_freq = his_region.historyOutputs['EIGFREQ'].data
+            out_his_eig_val = his_region.historyOutputs['EIGVAL'].data
             out_his_nt = his_region_prev.historyOutputs['NT11'].data
             # printAB(out_his_nt)
             if out_his_eig_freq is not None:
                 delta_T = out_his_nt[1][-1]
                 eig_freq = np.asarray([out_his_eig_freq[j][1] for j in range(len(out_his_eig_freq))])
+                eig_val = np.asarray([out_his_eig_val[j][1] for j in range(len(out_his_eig_val))])
                 data_all[i,0] = delta_T
                 data_all[i,1:] = eig_freq
+
+                data_eig_val[i,0] = delta_T
+                data_eig_val[i,1:] = eig_val
             # printAB('---')
         # printAB(data_all)
         odb.close()
         np.savetxt("../data_out/" + self.project + "_eig_freq.txt",data_all)
+        np.savetxt("../data_out/" + self.project + "_eig_val.txt",data_eig_val)
 
     def post_process_pv(self):
         # Import the relavent data

@@ -32,3 +32,4 @@
 *.lck
 *.SMABULK
 *.fil
+*.env
