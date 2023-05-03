@@ -5,7 +5,7 @@ sys.path.append('../')
 from buck_cylinder_obj import *
 from geo_prop import *
 
-idx_try = 200
+idx_try = 300
 bdamp = 0.0001
 proj_name = '3fold-fitting-'
 
@@ -14,8 +14,13 @@ proj_name = '3fold-fitting-'
 # t_try = [0.45, 0.475, 0.5, 0.525, 0.55]
 
 #v200+ trial
-E_try = [1.1, 1.15, 1.2, 1.25, 1.3]
-t_try = [0.55, 0.575, 0.6, 0.625, 0.65]
+# E_try = [1.1, 1.15, 1.2, 1.25, 1.3]
+# t_try = [0.55, 0.575, 0.6, 0.625, 0.65]
+
+#v300+ trial
+E_try = [1.4]
+t_try = [0.45, 0.5, 0.55, 0.60, 0.65]
+
 
 # E_try = [1.0]
 # t_try = [0.5]
