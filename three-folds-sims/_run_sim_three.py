@@ -5,7 +5,7 @@ sys.path.append('../')
 from buck_cylinder_obj import *
 from geo_prop import *
 
-idx_try = 300
+idx_try = 320
 bdamp = 0.0001
 proj_name = '3fold-fitting-'
 
@@ -18,8 +18,16 @@ proj_name = '3fold-fitting-'
 # t_try = [0.55, 0.575, 0.6, 0.625, 0.65]
 
 #v300+ trial
+# E_try = [1.4]
+# t_try = [0.45, 0.5, 0.55, 0.60, 0.65]
+
+#v310+ trial
+# E_try = [1.4]
+# t_try = [0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62]
+
+#v320+
 E_try = [1.4]
-t_try = [0.45, 0.5, 0.55, 0.60, 0.65]
+t_try = [0.59, 0.60]
 
 
 # E_try = [1.0]
@@ -34,7 +42,7 @@ for i in range(len(E_try)):
 
         test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur)
         test.run_linear_model()
-        jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.5*-0.332)
+        jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.7*-0.332)
         run_inp(jname_nonlin,4)
 
         test.post_process_pv()
