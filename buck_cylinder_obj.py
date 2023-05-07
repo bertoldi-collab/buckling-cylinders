@@ -218,8 +218,6 @@ class full_shell:
         self.finish_nonlinear_steps(make_dyn = not is_buckling)
         self.add_imperfection(eig_idx, eig_name = eig_name)
 
-        
-
         jname = self.save_cae_write_job(extra_str)
         return jname
 
