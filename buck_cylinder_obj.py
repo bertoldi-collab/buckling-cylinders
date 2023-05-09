@@ -45,19 +45,6 @@ import time
 import os
 import sys
 
-#Variable parameters
-#[[thickness, imper %, E_0, damping]]
-#from yi: R=10mm, H=18mm, t=0.25 ~ 0.3 mm
-# params = [[0.54,0.004,1.0,0.0001]]
-# idx_try = 104
-
-# #Fix parameters- geometric param
-# H     = 18.
-# R     = 10. 
-# w     = 5.
-# theta = 180 * np.pi/180.
-#H,R,t1,t2,theta,w,E1,E2,E_cap,h_element
-
 def printAB(string_):
     print >> sys.__stdout__, string_
 
@@ -197,8 +184,16 @@ class full_shell:
         jname = self.save_cae_write_job(extra_str)
         return jname
 
-    def make_nonlin_model(self,bdamp, is_buckling = False, eig_name = '_lin_buckling',temp_set = None, alt_name = None):
-        #makes dynamic implicit by default, if is_buckling is true makes a static followed by buckle step
+    def make_nonlin_model(self,bdamp, is_buckling = False, temp_set = None, eig_idx = None, eig_name = '_lin_buckling',  alt_name = None):
+        '''
+        *bdamp: damping value
+        *is_buckling: default false- does a dyn imp step; if set to true then does a single [static, freq] step
+        *temp_set: default None, allows setting final temp manually
+        *eig_idx: default None, allows setting index to pull impefection mode from eig_name manually
+        *eig_name: default '_lin_buckling', defines fil file to pull buckling mode from
+        *alt_name: default '_post_buckling', defines name of job file
+        '''
+
         if temp_set is not None:
             if temp_set >= -0.332 and temp_set <= 0:
                 self.temp_set = temp_set
@@ -210,10 +205,12 @@ class full_shell:
             self.post_process_lin_buckle(eig_name = eig_name)
         else:
             extra_str = '_post_buckling'
+        
+        if eig_idx is None:
+            eig_idx = self.get_eig_idx(eig_name = eig_name)
 
         self.bdamp = bdamp
         self.make_geometry(nonlinear_model = True)
-        eig_idx = self.get_eig_idx(eig_name = eig_name)
         self.finish_nonlinear_initial()
         self.finish_nonlinear_steps(make_dyn = not is_buckling)
         self.add_imperfection(eig_idx, eig_name = eig_name)
@@ -382,13 +379,12 @@ class full_shell:
         m.Temperature(amplitude='Amp-1', createStepName='Step-1', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
         distributionType=UNIFORM, magnitudes=(self.temp_set, ), name='Predefined Field-2', region=set_rp2)
 
-
     def finish_nonlinear_steps(self, make_dyn = False, make_riks = False, temp_list = None):
         '''
-        default behavior is to make 1 static and 1 buckle step
-        if make_dyn is True, then it makes a dynamic step
-        if make_riks is True, then it makes a riks step
-        if temp_list is provided it makes a series of [static, buckle] steps
+        *default behavior is to make 1 static and 1 buckle step
+        *if make_dyn is True, then it makes a dynamic step
+        *if make_riks is True, then it makes a riks step
+        *if temp_list is provided it makes a series of [static, buckle] steps
         '''
 
         m = self.model
@@ -541,7 +537,9 @@ class full_shell:
 
         data_all = np.array([cvol,pcav]).T
         np.savetxt("../data_out/" + self.project + "_pcav_cvol.txt",data_all)
-
+    
+    def post_process_twist(self):
+        pass
 
     def post_process_centernodes(self):
         # Import the relavent data

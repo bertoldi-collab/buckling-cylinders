@@ -105,29 +105,43 @@ def postProcess(project):
 	ext[0] = 1.
 	twist = np.zeros((n_end,1))
 	for i in range(1,n_end):
+		#get ith frame and disp output
 		frame = odb.steps['Step-1'].frames[i]
 		disp  = frame.fieldOutputs['U']
 		top_disp  = disp.getSubset(region=top_nodes)
+
+		#construct current centroid and compare against bottom centroid
 		Z_temp = Z_ref + np.array([top_disp.values[ii].data[2] for ii in range(len(top_disp.values))])
 		XX_temp = X_ref + np.array([top_disp.values[ii].data[0] for ii in range(len(top_disp.values))])
 		YY_temp = Y_ref + np.array([top_disp.values[ii].data[1] for ii in range(len(top_disp.values))])
 		centroid_temp = np.array([np.mean(XX_temp),np.mean(YY_temp),np.mean(Z_temp)])
+
+		#ext[i] is the contraction at the ith frame
 		ext[i] = np.linalg.norm(centroid_temp-centroid_bottom)/H
+
+		#matrix of (x,y,1) for each point in the top cap
 		A_temp = A_ref + np.array([[top_disp.values[ii].data[0],top_disp.values[ii].data[1],1] for ii in range(len(top_disp.values))])
-		x_temp = np.dot(np.dot(np.linalg.inv(np.dot(A_temp.T,A_temp)),A_temp.T),Z_temp) #this is solving the plane equation using the normal equations
+
+		#this is solving the plane equation using the normal equations
+		x_temp = np.dot(np.dot(np.linalg.inv(np.dot(A_temp.T,A_temp)),A_temp.T),Z_temp) 
 		normal_temp = np.array([-x_temp[0],-x_temp[1],1])/np.linalg.norm([-x_temp[0],-x_temp[1],1])
-		ba_temp = np.dot(n_ref,normal_temp.T) #angle between the two vectors
+
+		#angle between the two vectors [ba = "bending angle"]
+		ba_temp = np.dot(n_ref,normal_temp.T) 
 		if ba_temp >1.:
 			ba[i] = 0.
 		else:
 			ba[i] = np.arccos(ba_temp)
-		linenodes = np.cross(n_ref,normal_temp) #Axis of rotation between the two planes
+		
+		#Axis of rotation between the two planes
+		linenodes = np.cross(n_ref,normal_temp) 
 		normlinenodes = np.linalg.norm(linenodes)
 		if normlinenodes > 0.0:
 			linenodes = linenodes/normlinenodes
 		ux = linenodes[0]
 		uy = linenodes[1]
 		uz = linenodes[2]
+
 		#Rotation matrix depending on axis of rotation + bending angle (ba)
 		rotmat = np.array([[np.cos(ba[i])+ux**2*(1-np.cos(ba[i])),ux*uy*(1-np.cos(ba[i]))-uz*np.sin(ba[i]), ux*uz*(1-np.cos(ba[i]))+uy*np.sin(ba[i])],
 						[uy*ux*(1-np.cos(ba[i]))+uz*np.sin(ba[i]),np.cos(ba[i])+uy**2*(1-np.cos(ba[i])),uy*uz*(1-np.cos(ba[i]))-ux*np.sin(ba[i])],
