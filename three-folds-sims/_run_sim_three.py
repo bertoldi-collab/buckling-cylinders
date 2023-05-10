@@ -5,7 +5,7 @@ sys.path.append('../')
 from buck_cylinder_obj import *
 from geo_prop import *
 
-idx_try = 320
+idx_try = 400
 bdamp = 0.0001
 proj_name = '3fold-fitting-'
 
@@ -26,26 +26,30 @@ proj_name = '3fold-fitting-'
 # t_try = [0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62]
 
 #v320+
+# E_try = [1.4]
+# t_try = [0.59, 0.60]
+
+#v400+
 E_try = [1.4]
-t_try = [0.59, 0.60]
+t_try = [0.54,0.56,0.58,0.60,0.62,0.64]
 
-
-# E_try = [1.0]
-# t_try = [0.5]
 
 for i in range(len(E_try)):
     E_cur = E_try[i]
     for j in range(len(t_try)):
         # printAB(idx_try)
         t_cur = t_try[j]
-        geo_prop_cur = geoProps(8, 20, 5, t_cur, E_cur) #all else is taken from geo_prop_three
+        geo_prop_cur = geoProps(10, 27, 5, t_cur, E_cur) #all else is taken from geo_prop_three
 
         test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur)
-        test.run_linear_model()
-        jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.7*-0.332)
+        jname_lin = test.run_linear_model()
+        jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.5*-0.332)
         run_inp(jname_nonlin,4)
 
         test.post_process_pv()
+
+        delete_extra_files(jname_lin, ['.fil', '.sta', '.log'])
+        delete_extra_files(jname_nonlin)
 
         idx_try += 1
 

@@ -5,12 +5,17 @@ sys.path.append('../')
 from buck_cylinder_obj import *
 from geo_prop import *
 
-idx_try = 118
+# idx_try = 118
+idx_try = 202
 bdamp = 0.0001
 jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
-test = full_shell(project = '4fold-imperfection-'+str(idx_try), simpProps = geo_prop_four, imperfection = 0.05)
+test = full_shell(project = '4fold-imperfection-'+str(idx_try), simpProps = geo_prop_four)
+
+
 # test.run_linear_model()
-# test.make_nonlin_model(bdamp)
+# jname = test.make_nonlin_model(bdamp, temp_set = -0.332*0.3)
+# run_inp(jname)
+test.post_process_twist()
 # jname_post = test.make_nonlin_model(bdamp, is_buckling = True, temp_set = -0.08)
 # run_inp(jname_post,4)
 # jname_post_2 = test.make_nonlin_model(bdamp, temp_set = -0.332, alt_name = '_post_alt_eig', eig_name = '_post_buckling')
@@ -18,8 +23,8 @@ test = full_shell(project = '4fold-imperfection-'+str(idx_try), simpProps = geo_
 # run_inp(jname_multi)
 
 # run_inp(jname_nonlin,4)
-jname_post_2 = '4fold-imperfection-'+str(idx_try) + '_post_alt_eig'
-run_inp(jname_post_2,8)
+# jname_post_2 = '4fold-imperfection-'+str(idx_try) + '_post_alt_eig'
+# run_inp(jname_post_2,8)
 
 #NOTE TO FUTURE HELEN BEFORE YOU TRY TO RUN 118: WE NEED TO ADD THE STORAGE OF NODE OUTPUT FILES FOR THE POST BUCKLING ANALYSIS TO GRAB
 #AND ALSO DO THE POST PROCESSING LINEAR BUCKLE PART FOR THE POST PROCESSSING OF NONLINEAR BUCKLING
