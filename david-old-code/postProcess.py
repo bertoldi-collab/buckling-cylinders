@@ -127,7 +127,10 @@ def postProcess(project):
 		normal_temp = np.array([-x_temp[0],-x_temp[1],1])/np.linalg.norm([-x_temp[0],-x_temp[1],1])
 
 		#angle between the two vectors [ba = "bending angle"]
-		ba_temp = np.dot(n_ref,normal_temp.T) 
+		ba_temp = np.dot(n_ref,normal_temp.T)
+
+		#if ba_temp > 1, then something has gone wrong? or it's flat?
+		#but valid domain of np.arccos is [-1,1]
 		if ba_temp >1.:
 			ba[i] = 0.
 		else:

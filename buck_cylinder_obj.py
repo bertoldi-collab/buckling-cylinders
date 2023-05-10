@@ -141,6 +141,13 @@ class full_shell:
         return jname
 
     def make_nonlin_multi_buckle(self,bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None):
+        '''
+        makes a model with N [static, frequency] steps
+        *bdamp: beta damping value (is this needed? I'm doing static)
+        *max_temp_mult: between [0,1], how much \Delta V/V_0 to remove
+        *num_steps: the number of [static, freq] pairs
+        *eig_idx: allows manually specifying the index to pull the imperfection mode from
+        '''
         eig_name = '_lin_buckling'
         self.bdamp = bdamp
 
@@ -157,9 +164,6 @@ class full_shell:
         jname = self.save_cae_write_job('_multi_buckling')
 
         return jname
-        
-        #uhh so I want to basically have a normal nonlin model
-        #but keep adding more and more steps changing temp_set each time
 
     def make_riks_model(self,bdamp, temp_mult = None):
         #makes dynamic implicit by default, if is_buckling is true makes a static followed by buckle step
@@ -186,6 +190,7 @@ class full_shell:
 
     def make_nonlin_model(self,bdamp, is_buckling = False, temp_set = None, eig_idx = None, eig_name = '_lin_buckling',  alt_name = None):
         '''
+        makes a general nonlinear model w/ some imperfection from a previous simulation
         *bdamp: damping value
         *is_buckling: default false- does a dyn imp step; if set to true then does a single [static, freq] step
         *temp_set: default None, allows setting final temp manually
@@ -520,7 +525,6 @@ class full_shell:
     def post_process_pv(self):
         # Import the relavent data
         project = self.project + '_post_buckling'
-        part_name = 'Merged'
         # Post-processing
         odb = openOdb(project + '.odb')
 
@@ -538,17 +542,41 @@ class full_shell:
         data_all = np.array([cvol,pcav]).T
         np.savetxt("../data_out/" + self.project + "_pcav_cvol.txt",data_all)
     
-    def post_process_twist(self):
-        pass
+    def post_process_contraction_twist(self):
+        project = self.project + '_post_buckling'
+        odb = openOdb(project + '.odb')
+        part_name = 'Merged'
+        i_name = part_name.upper() + '-1'
+
+        #get number of frames and initialize output variables
+        num_frames = len(odb.steps['Step-1'].frames)
+        time_all, twist_all, contraction_all = [np.zeros((num_frames)) for _ in range(3)]
+
+        top_nodes = odb.rootAssembly.instances[i_name].nodeSets['CAP_FACE']
+
+        #iterate through frames and get the mean u3 and ur3 for the cap face nodes
+        for cc,frame in enumerate(odb.steps['Step-1'].frames):
+            time_all[cc] = frame.frameValue
+
+            field_top_U = frame.fieldOutputs['U'].getSubset(region = top_nodes, position = NODAL)
+            field_top_UR = frame.fieldOutputs['UR'].getSubset(region = top_nodes, position = NODAL)
+
+            contraction_all[cc] = (np.mean([value.data[2] for value in field_top_U.values]) + self.H)/self.H
+            twist_all[cc] = np.mean([value.data[2] for value in field_top_UR.values])
+        
+        odb.close()
+
+        data_all = np.array([time_all, contraction_all, twist_all]).T
+        np.savetxt("../data_out/" + self.project + "_contraction_twist.txt",data_all)
 
     def post_process_centernodes(self):
         # Import the relavent data
         project = self.project + '_post_buckling'
         part_name = 'Merged'
+        i_name = part_name.upper() + '-1'
         # Post-processing
         odb = openOdb(project + '.odb')
-        session.viewports['Viewport: 1'].setValues(displayedObject=odb)
-        cc = 0
+        # session.viewports['Viewport: 1'].setValues(displayedObject=odb)
 
         #calculate number of frames; defines size of output arrays
         num_frames = len(odb.steps['Step-1'].frames)
@@ -556,31 +584,25 @@ class full_shell:
 
         #find number of centernodes
         initial_coord_output = odb.steps['Step-1'].frames[0].fieldOutputs['COORD'].getSubset(region=
-            odb.rootAssembly.instances[part_name.upper()+'-1'].nodeSets['CENTERNODES'], position=NODAL)
+            odb.rootAssembly.instances[i_name].nodeSets['CENTERNODES'], position=NODAL)
         num_nodes = len(initial_coord_output.values)
 
         #make data for x,y,z where a col is a timestep
-        x_all = np.zeros((num_nodes,num_frames))
-        y_all = np.zeros((num_nodes,num_frames))
-        z_all = np.zeros((num_nodes,num_frames))
+        x_all, y_all, z_all = [np.zeros((num_nodes,num_frames)) for _ in range(3)]
 
-        for frame in odb.steps['Step-1'].frames:
+        for cc,frame in enumerate(odb.steps['Step-1'].frames):
             time_all[cc] = frame.frameValue
             fieldU = frame.fieldOutputs['COORD']
             
-            ndFieldU = fieldU.getSubset(region=odb.rootAssembly.instances[part_name.upper()+'-1'].nodeSets['CENTERNODES'],
+            ndFieldU = fieldU.getSubset(region=odb.rootAssembly.instances[i_name].nodeSets['CENTERNODES'],
                 position=NODAL)
             #below gives you the [x,y,z] coord of the 0th point
             #printAB(ndFieldU.values[0].data)
-            nodal_coord = []
             for i,value in enumerate(ndFieldU.values):
                 current_coord = value.data
                 x_all[i,cc] = current_coord[0]
                 y_all[i,cc] = current_coord[1]
                 z_all[i,cc] = current_coord[2]
-                #nodal_coord.append(value.data)
-
-            cc = cc+1
 
         odb.close()
         np.savetxt("../data_out/" + self.project + "_x_all.txt",x_all)
@@ -589,98 +611,6 @@ class full_shell:
         np.savetxt("../data_out/" + self.project + "_t_all.txt",time_all)
         
         print('Post-processing UC is done. File saved.')
-
-    # def make_extra_buck(self,bdamp):
-    #     Mdb()
-    #     m = mdb.models['Model-1']
-    #     self.model = m
-    #     p_all = m.PartFromOdb(frame=22, instance='MERGED-1', name='MERGED-1', 
-    #         odb=session.openOdb(self.project + '_post_buckling.odb'), shape=DEFORMED, step=0)
-
-    #     self.add_materials()
-
-    #     '''section bs part 2'''
-    #     #todo: perhaps the thickness should come from geometry? rip lmaoooooo
-    #     m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
-    #         integrationRule=SIMPSON, material='NH-1', name='Section-1', 
-    #         nodalThicknessField='', numIntPts=5, poissonDefinition=DEFAULT, 
-    #         preIntegrate=OFF, temperature=GRADIENT, thickness=self.t1, thicknessField='', 
-    #         thicknessModulus=None, thicknessType=UNIFORM, useDensity=OFF)
-    #     m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
-    #         integrationRule=SIMPSON, material='NH-2', name='Section-2', 
-    #         nodalThicknessField='', numIntPts=5, poissonDefinition=DEFAULT, 
-    #         preIntegrate=OFF, temperature=GRADIENT, thickness=self.t2, thicknessField='', 
-    #         thicknessModulus=None, thicknessType=UNIFORM, useDensity=OFF)
-    #     m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
-    #         integrationRule=SIMPSON, material='NH-cap', name='Section-cap', 
-    #         nodalThicknessField='', numIntPts=5, poissonDefinition=DEFAULT, 
-    #         preIntegrate=OFF, temperature=GRADIENT, thickness=self.w, thicknessField='', 
-    #         thicknessModulus=None, thicknessType=UNIFORM, useDensity=OFF)
-
-    #     p_all.SectionAssignment(offset=0.0, 
-    #         offsetField='', offsetType=MIDDLE_SURFACE, region=
-    #         p_all.sets['CAP_FACE'], sectionName=
-    #         'Section-cap', thicknessAssignment=FROM_SECTION)
-    #     p_all.SectionAssignment(offset=0.0, 
-    #         offsetField='', offsetType=BOTTOM_SURFACE, region=
-    #         p_all.sets['BODY-1'], sectionName=
-    #         'Section-1', thicknessAssignment=FROM_SECTION)
-    #     p_all.SectionAssignment(offset=0.0, 
-    #         offsetField='', offsetType=BOTTOM_SURFACE, region=
-    #         p_all.sets['BODY-2'], sectionName=
-    #         'Section-2', thicknessAssignment=FROM_SECTION)
-
-    #     printAB(p_all.sets['CAP_FACE'].elements)
-
-    #     '''make assembly'''
-    #     a = m.rootAssembly
-    #     self.aa = a
-
-    #     rp1=a.ReferencePoint(point=(0.0, 0.0, 0.0))
-    #     rp2=a.ReferencePoint(point=(0.0, 0.0, 0.5*self.H))
-    #     rp3=a.ReferencePoint(point=(0.0, 0.0, self.H))
-    #     set_rp1 = a.Set(name='rp1', referencePoints=(a.referencePoints[rp1.id], ))
-    #     set_rp2 = a.Set(name='rp2', referencePoints=(a.referencePoints[rp2.id], ))
-    #     set_rp3 = a.Set(name='rp3', referencePoints=(a.referencePoints[rp3.id], ))
-
-    #     #instance
-    #     i_all = a.Instance(dependent=ON, name='MERGED-1-1', part=p_all)
-
-    #     a.Surface(name='Surf-main', side12Elements=i_all.elements.getByBoundingCylinder(center1 = (0,0,-2*self.t1),
-    #         center2 = (0,0,self.H + 2*self.t1), radius = self.R + 3*self.t1))
-
-    #     m.FluidCavityProperty(bulkModulusTable=((2000.0, ), ), expansionTable=((1.0, ), ),
-    #         fluidDensity=1e-09, name='IntProp-1', useBulkModulus=True, useExpansion=True)
-
-    #     m.FluidCavity(cavityPoint=set_rp2, cavitySurface=a.surfaces['Surf-main'],
-    #         createStepName='Initial', interactionProperty='IntProp-1', name='Int-1')
-
-    #     '''AMPLITUDE'''
-    #     m.SmoothStepAmplitude(data=((0.0, 0.0), (1.0, 1.0)), name='Amp-1', timeSpan=STEP)
-
-    #     '''STEP'''
-    #     m.BuckleStep(maxEigen=None, name='Step-1', numEigen=10, previous='Initial', vectors=18,maxIterations=500)
-
-    #     '''BCS'''
-    #     m.DisplacementBC(amplitude=UNSET, buckleCase=
-    #         PERTURBATION_AND_BUCKLING, createStepName='Step-1', distributionType=
-    #         UNIFORM, fieldName='', fixed=OFF, localCsys=None, name='BC-1', region=
-    #         a.sets['MERGED-1-1.RING'], u1=0.0, u2=0.0, u3=0.0, 
-    #         ur1=0.0, ur2=0.0, ur3=0.0)
-
-    #     m.FluidCavityPressureBC(amplitude=UNSET, createStepName=
-    #         'Step-1', fixed=OFF, fluidCavity='Int-3', magnitude=-1.0, name='BC-2')
-
-    #     '''WRITE INP FILE'''
-    #     # dir_path = os.path.dirname(os.path.realpath(__file__))
-    #     m.keywordBlock.synchVersions(storeNodesAndElements=False)
-    #     nlinesInput = len(m.keywordBlock.sieBlocks)
-    #     m.keywordBlock.replace(nlinesInput-2, '\n*Output, field, variable=PRESELECT\n*NODE FILE\nU,')
-
-    #     extra_str = '_lin_buckling_deformed'
-    #     jname = self.make_job(extra_str)
-    #     mdb.saveAs(self.project+extra_str)
-    #     return jname
 
     def add_materials(self, nonlinear_model = False):
         m = self.model
@@ -751,41 +681,13 @@ class full_shell:
             p4.setMeshControls(elemShape=QUAD_DOMINATED, regions = p4.faces, technique=FREE)
 
         if self.mesh_order == 'quadratic':
+            #todo: I think quadratic doesn't work for finite sliding so possibly just delete this
             p4.setElementType(elemTypes=(ElemType(elemCode=S8R, elemLibrary=STANDARD), ElemType(elemCode=STRI65, 
-                elemLibrary=STANDARD)),  regions=(self.p3.faces, ))
+                elemLibrary=STANDARD)),  regions=(self.part.faces, ))
         else:
             p4.setElementType(elemTypes=(ElemType(elemCode=S4R, elemLibrary=STANDARD, secondOrderAccuracy=OFF, 
-                hourglassControl=DEFAULT), ElemType(elemCode=S3, elemLibrary=STANDARD)), regions=(self.p3.faces, ))
+                hourglassControl=DEFAULT), ElemType(elemCode=S3, elemLibrary=STANDARD)), regions=(self.part.faces, ))
         p4.generateMesh()
-
-
-
-        # if mesh_type == 'quad_lin':
-        #         #todo: regions used to be p3.faces not p4 check if this is ok
-
-        #     #p3.setMeshControls(elemShape=H,regions=p3.cells, technique=FREE)
-        #     p4.setElementType(elemTypes=(ElemType(elemCode=S4R, elemLibrary=STANDARD, secondOrderAccuracy=OFF, 
-        #         hourglassControl=DEFAULT), ElemType(elemCode=S3, elemLibrary=STANDARD)), regions=(self.p3.faces, ))
-        # elif mesh_type == 'quad_quad':
-        #     pass
-        # elif mesh_type == 'tri_lin':
-        #     # faces_all = p4.Set(name = 'faces_all', faces = p4.faces)
-        #     # face_cap = p4.Set(name = 'face_cap', faces = FaceArray((p4.faces.findAt((0, 0, self.H)), ) ))
-
-        #     faces_all = p4.faces
-        #     face_cap = FaceArray((p4.faces.findAt((0, 0, self.H)), ) )
-        #     printAB(p4.faces.findAt((0, 0, self.H)))
-        #     # nodes_edges_only = [edge_nodes[i] for i in range(len(edge_nodes)) if edge_nodes[i] not in corner_nodes]
-
-        #     face_shell_only = [faces_all[i] for i in range(len(faces_all)) if faces_all[i] not in face_cap]
-        #     face_shell_only = FaceArray(face_shell_only)
-        #     printAB(face_shell_only)
-
-        #     p4.setMeshControls(elemShape=TRI, regions=face_shell_only, technique=STRUCTURED)
-
-        # p4.generateMesh()
-
-
 
     def make_geometry(self, nonlinear_model = False):
         try:
@@ -793,7 +695,6 @@ class full_shell:
             os.remove(self.project+'.odb')
         except OSError:
             pass
-
 
         #Abaqus related names
         model_name    = 'model'
@@ -803,8 +704,7 @@ class full_shell:
         cae_file      = self.project+'.cae'
         section_name  = 'solid_section'
 
-        #Element selection 
-        quad_element = 'S4R'#if shells are used
+        #Element selection
         h_element    =  self.h_element #scales with thickness
 
         #assign local var bc I copied this from david's code
@@ -814,9 +714,6 @@ class full_shell:
         t1 = self.t1
         t2 = self.t2
         w = self.w
-
-
-
 
         '''
         ------------------------------------------------------------------------
@@ -843,6 +740,7 @@ class full_shell:
         s3.ArcByCenterEnds(center=(0.0, 0.0), direction=COUNTERCLOCKWISE,
             point1=(-R*cos(0.5*pi-0.5*theta), R*sin(0.5*pi-0.5*theta)),
             point2=(R*cos(0.5*pi-0.5*theta), R*sin(0.5*pi-0.5*theta)))
+        
         s4 = m.ConstrainedSketch(name='s4', sheetSize=200.0)
         s4.CircleByCenterPerimeter(center=(0.0, 0.0), point1=(0.,R))
 
@@ -856,23 +754,23 @@ class full_shell:
         p4 = m.Part(name=part_name+'_4', dimensionality=THREE_D, type=DEFORMABLE_BODY)
         p4.BaseShell(sketch=s4)
 
+        parts = [p1,p2,p3,p4]
+
         '''ASSEMBLY'''
         a = m.rootAssembly
         self.aa = a
 
-        i1 = a.Instance(dependent=ON, name=assembly_name+'_1',part=p1)
-        i2 = a.Instance(dependent=ON, name=assembly_name+'_2',part=p2)
-        i3 = a.Instance(dependent=ON, name=assembly_name+'_3',part=p3)
-        i4 = a.Instance(dependent=ON, name=assembly_name+'_4',part=p4)
+        for i,p in enumerate(parts):
+            a.Instance(dependent=ON, name=assembly_name+'_'+str(i+1),part=p)
         a.translate(instanceList=(assembly_name+'_4', ), 
-        vector=(0.0, 0.0, H))
-        a.InstanceFromBooleanMerge(domain=GEOMETRY,instances=tuple([a.instances[a.instances.keys()[xxx]] 
-            for xxx in range(len(a.instances.keys()))]),
-        keepIntersections=ON, name='Merged', originalInstances=SUPPRESS)
-        p4 = m.parts['Merged']
+            vector=(0.0, 0.0, H))
 
+        a.InstanceFromBooleanMerge(domain=GEOMETRY,instances=tuple(a.instances.values()),
+            keepIntersections=ON, name='Merged', originalInstances=SUPPRESS)
+
+        p4 = m.parts['Merged']
+        i_all = a.instances['Merged-1']
         self.part = p4
-        self.p3 = p3
 
         f1 = p4.faces.findAt((0.,0.,H))
         f2 = p4.faces.findAt((R*cos(0.5*pi-0.25*theta),R*sin(0.5*pi-0.25*theta),0.5*H))
@@ -882,6 +780,7 @@ class full_shell:
         e2 = p4.edges.findAt((-R*cos(0.5*pi-0.25*theta),R*sin(0.5*pi-0.25*theta),0.))
         e3 = p4.edges.findAt((0.,-R,0.))
         e4 = p4.edges.findAt((0.,R,0.5*H))
+
         p4.Set(name='cap_face',faces=(p4.faces[f1.index:f1.index+1], ))
         p4.Set(name='body-1',faces=(p4.faces[f2.index:f2.index+1],p4.faces[f3.index:f3.index+1], ))
         p4.Set(name='body-2',faces=(p4.faces[f4.index:f4.index+1], ))
@@ -918,16 +817,15 @@ class full_shell:
         self.mesh_part()
 
         '''SETS'''
-        rp1=a.ReferencePoint(point=(0.0, 0.0, 0.0))
-        rp2=a.ReferencePoint(point=(0.0, 0.0, 0.5*H))
-        rp3=a.ReferencePoint(point=(0.0, 0.0, H))
+        rp1 = a.ReferencePoint(point=(0.0, 0.0, 0.0))
+        rp2 = a.ReferencePoint(point=(0.0, 0.0, 0.5*H))
+        rp3 = a.ReferencePoint(point=(0.0, 0.0, H))
         set_rp1 = a.Set(name='rp1', referencePoints=(a.referencePoints[rp1.id], ))
         set_rp2 = a.Set(name='rp2', referencePoints=(a.referencePoints[rp2.id], ))
         set_rp3 = a.Set(name='rp3', referencePoints=(a.referencePoints[rp3.id], ))
 
         '''MATERIALS'''
         self.add_materials(nonlinear_model)
-        
         
         '''CENTRAL NODES'''
         top_nodes = p4.sets['cap_face'].nodes
@@ -948,17 +846,15 @@ class full_shell:
         bottom_center_node = np.argmin(bottom_norm)
         p4.Set(name='bottom_middle_node',nodes=(p4.sets['ring'].nodes[bottom_center_node:bottom_center_node+1], ))
 
+        # p4.Set(name='centernodes', nodes=p4.nodes.getByBoundingBox(-2*R,-2*R,0.5*H-0.9*h_element,
+        #     2*R,2*R,0.5*H+0.1*h_element))
+        
+        p4.Set(name = 'centernodes', nodes = p4.nodes.getByBoundingCylinder(center1 = (0, 0, 0.5*H - 0.9*h_element),
+            center2 = (0, 0, 0.5*H + 0.1*h_element), radius = R + h_element))
+
         '''FLUID-CAVITY INTERACTION'''
-        surfs = []
-        surfs.append(a.Surface(name='Surf-1', side2Faces=a.instances['Merged-1'].faces[f1.index:f1.index+1]))
-        surfs.append(a.Surface(name='Surf-2', side2Faces=a.instances['Merged-1'].faces[f2.index:f2.index+1]))
-        surfs.append(a.Surface(name='Surf-3', side2Faces=a.instances['Merged-1'].faces[f3.index:f3.index+1]))
-        surfs.append(a.Surface(name='Surf-4', side2Faces=a.instances['Merged-1'].faces[f4.index:f4.index+1]))
-
-
+        surfs = [a.Surface(name='Surf-' + str(i+1), side2Faces=i_all.faces[f.index:f.index+1]) for i,f in enumerate([f1,f2,f3,f4])]
         a.SurfaceByBoolean(name='Surf-main', surfaces=(surfs))
-        p4.Set(name='centernodes', nodes=p4.nodes.getByBoundingBox(-2*R,-2*R,0.5*H-0.9*h_element,
-            2*R,2*R,0.5*H+0.1*h_element))
 
         m.FluidCavityProperty(bulkModulusTable=((2000.0, ), ), expansionTable=((1.0, ), ),
             fluidDensity=1e-09, name='IntProp-1', useBulkModulus=True, useExpansion=True)
