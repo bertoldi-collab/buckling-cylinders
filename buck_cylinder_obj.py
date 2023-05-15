@@ -432,12 +432,14 @@ class full_shell:
                 static_step_name = 'Step-' + str(idx)
                 buckle_step_name = static_step_name + '-buckle'
                 static_step = m.StaticStep(initialInc=0.01*len(temp_list), maxInc=max_inc_step, maxNumInc=nincre, minInc=1e-11,
-                    name=static_step_name, nlgeom=ON, previous=prev_step_name)
+                    name=static_step_name, nlgeom=ON, previous=prev_step_name, adaptiveDampingRatio=None, continueDampingFactors=False,
+                    stabilizationMagnitude=0.0002, stabilizationMethod=DAMPING_FACTOR)
+                # m.StaticStep(adaptiveDampingRatio=None, 
+                #     continueDampingFactors=False, name='Step-1', nlgeom=ON, previous='Initial', 
+                #     stabilizationMagnitude=0.0002, stabilizationMethod=DAMPING_FACTOR)
                 # static_step.control.setValues(allowPropagation=OFF,resetDefaultValues=OFF,
                 #     timeIncrementation=(4.0, 8.0, 9.0, 16.0, 10.0, 4.0,12.0, 25.0, 6.0, 3.0, 50.0))
                 #note: the 25.0 above is the number of 1U, 2U,...etc attempts, default is 5
-                # m.BuckleStep(maxEigen=None, name=buckle_step_name, numEigen=10,
-                #     previous=static_step_name, vectors=18,maxIterations=1000)
                 m.FrequencyStep(name=buckle_step_name, numEigen=10, previous=static_step_name)
 
                 #set temp for static
