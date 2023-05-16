@@ -6,7 +6,7 @@ from buck_cylinder_obj import *
 from geo_prop import *
 from time import time
 
-idx_try = 650
+idx_try = 660
 bdamp = 0.0001
 
 num_folds = 3
@@ -46,7 +46,7 @@ for i, nu in enumerate(nu_try):
     # test = full_shell(project = proj_name+str(idx_try), fullProps = geo_prop_bend, imperfection = 0.05)
     test.nu_shell = nu
     jname_lin = test.run_linear_model()
-    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.35, num_steps = 50)
+    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50, eig_idx = 3)
 
     run_inp(jname_multi)
 
@@ -79,8 +79,9 @@ for i, nu in enumerate(nu_try):
 #610s series: 3 folds, 30 steps instead of 40
 #620s series: 3 folds, 40 steps, increase imperfection to 0.07
 #630s series: 3 folds, 50 steps, imperfection back to 0.05
-#640s series: 3 folds, 50 steps, added damping factor to static step
-#650s series: 3 folds, 50 steps, increase imperfection to 0.1
+#640s series: 3 folds, 50 steps, added damping factor to static step (buck_cylinder_obj.py change)
+#650s series: 3 folds, 50 steps, increase imperfection to 0.1 [lmao this one is literally the 4 folds]
+#650s series: 3 folds, 50 steps, manually set eig_idx
 
 
 
