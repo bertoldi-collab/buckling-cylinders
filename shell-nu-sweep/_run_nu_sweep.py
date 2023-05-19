@@ -6,7 +6,7 @@ from buck_cylinder_obj import *
 from geo_prop import *
 from time import time
 
-idx_try = 660
+idx_try = 670
 bdamp = 0.0001
 
 num_folds = 3
@@ -24,7 +24,8 @@ else: raise ValueError('yo')
 # E_try = [1.0]
 # t_try = [0.5]
 
-nu_try = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+# nu_try = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+nu_try = [0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49]
 # time_all = [0, 0, 0]
 
 # for i in range(len(nu_try)):
@@ -81,7 +82,8 @@ for i, nu in enumerate(nu_try):
 #630s series: 3 folds, 50 steps, imperfection back to 0.05
 #640s series: 3 folds, 50 steps, added damping factor to static step (buck_cylinder_obj.py change)
 #650s series: 3 folds, 50 steps, increase imperfection to 0.1 [lmao this one is literally the 4 folds]
-#650s series: 3 folds, 50 steps, manually set eig_idx
+#660s series: 3 folds, 50 steps, manually set eig_idx to force 3 folds
+#670s series: 3 folds, 50 steps, using nu \in linspace(0.40, 0.49)
 
 
 
