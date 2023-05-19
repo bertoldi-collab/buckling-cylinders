@@ -5,9 +5,9 @@ sys.path.append('../')
 from buck_cylinder_obj import *
 from geo_prop import *
 
-sim_type = '4folds'
-geo_props_use = geo_prop_four
-version = 109
+sim_type = '2folds'
+geo_props_use = geo_prop_two
+version = 107
 
 final_temp_mult = 0.75
 bdamp = 0.001
@@ -18,14 +18,16 @@ proj_name = 'sim-long-' + sim_type + '-' + str(version)
 test = full_shell(project = proj_name, simpProps = geo_props_use, imperfection = 0.001)
 
 # test.h_element = elem_size_mult * test.h_element
-jname_lin = test.run_linear_model()
-jname_nonlin = test.make_nonlin_model(bdamp, temp_set = final_temp_mult*-0.332)
-run_inp(jname_nonlin,6)
+# jname_lin = test.run_linear_model()
+# jname_nonlin = test.make_nonlin_model(bdamp, temp_set = final_temp_mult*-0.332)
+# run_inp(jname_nonlin,6)
 
-test.post_process_pv()
-test.post_process_contraction_twist()
-delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log'])
-delete_extra_files(jname_nonlin)
+# test.post_process_pv()
+# test.post_process_contraction_twist()
+# delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log'])
+# delete_extra_files(jname_nonlin)
+
+test.post_process_num_folds()
 
 #FOUR FOLDS
 #v100: ran normal, failed at 0.777: looks like we got local hourglassing that caused the sample to bend
@@ -42,3 +44,4 @@ delete_extra_files(jname_nonlin)
 #long 3 and 4
 #v108: 3folds up to 0.75
 #v109: 4folds up to 0.75
+#v110: 2folds up to 0.75
