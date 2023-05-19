@@ -18,7 +18,7 @@ Tested on Abaqus 2018
 Import Python-related libraries
 ------------------------------------------------------------------------
 '''
-import numpy as np;
+import numpy as np
 from math import *
 
 '''
@@ -119,7 +119,7 @@ class full_shell:
 
         self.mesh_shape = 'quad' #pass in 'tri' for triangular elements
         self.mesh_order = 'lin' #pass in 'quadratic' for 2nd order
-
+        self.transverse_shear = False
 
     def make_job(self,extra_str,num_threads = 1):
         m = self.model
@@ -188,15 +188,15 @@ class full_shell:
         jname = self.save_cae_write_job(extra_str)
         return jname
 
-    def make_nonlin_model(self,bdamp, is_buckling = False, temp_set = None, eig_idx = None, eig_name = '_lin_buckling',  alt_name = None):
+    def make_nonlin_model(self, bdamp, is_buckling = False, temp_set = None, eig_idx = None, eig_name = '_lin_buckling',  alt_name = None):
         '''
         makes a general nonlinear model w/ some imperfection from a previous simulation
-        *bdamp: damping value
-        *is_buckling: default false- does a dyn imp step; if set to true then does a single [static, freq] step
-        *temp_set: default None, allows setting final temp manually
-        *eig_idx: default None, allows setting index to pull impefection mode from eig_name manually
-        *eig_name: default '_lin_buckling', defines fil file to pull buckling mode from
-        *alt_name: default '_post_buckling', defines name of job file
+        * bdamp: damping value
+        * is_buckling: default false- does a dyn imp step; if set to true then does a single [static, freq] step
+        * temp_set: default None, allows setting final temp manually
+        * eig_idx: default None, allows setting index to pull impefection mode from eig_name manually
+        * eig_name: default '_lin_buckling', defines fil file to pull buckling mode from
+        * alt_name: default '_post_buckling', defines name of job file
         '''
 
         if temp_set is not None:
@@ -386,10 +386,11 @@ class full_shell:
 
     def finish_nonlinear_steps(self, make_dyn = False, make_riks = False, temp_list = None):
         '''
-        *default behavior is to make 1 static and 1 buckle step
-        *if make_dyn is True, then it makes a dynamic step
-        *if make_riks is True, then it makes a riks step
-        *if temp_list is provided it makes a series of [static, buckle] steps
+        finishes adding steps to a post buckling analysis
+        * default behavior is to make 1 static and 1 buckle step
+        * if make_dyn is True, then it makes a dynamic step
+        * if make_riks is True, then it makes a riks step
+        * if temp_list is provided it makes a series of [static, buckle] steps
         '''
 
         m = self.model
@@ -571,6 +572,60 @@ class full_shell:
         data_all = np.array([time_all, contraction_all, twist_all]).T
         np.savetxt("../data_out/" + self.project + "_contraction_twist.txt",data_all)
 
+    def post_process_num_folds(self):
+        # Import the relavent data
+        project = self.project + '_lin_buckling'
+        part_name = 'Merged'
+        i_name = part_name.upper() + '-1'
+        # Post-processing
+        odb = openOdb(project + '.odb')
+        step=odb.steps['Step-1']
+        frames = step.frames
+
+        # f2: Get displacement of center nodes during first mode
+        
+        center_nodes = odb.rootAssembly.instances[i_name].nodeSets['CENTERNODES']
+        # printAB(center_nodes.nodes[0])
+        num_center_nodes = len(center_nodes.nodes)
+
+        disp_centernodes = np.zeros((num_center_nodes,2))
+        coord_centernodes_init = np.zeros((num_center_nodes,2))
+        phase_all = np.zeros((num_center_nodes,))
+
+        disp = frames[1].fieldOutputs['U']
+        disp_field_centernodes = disp.getSubset(region = center_nodes, position = NODAL)
+        for i, node in enumerate(disp_field_centernodes.values):
+            x_init, y_init = np.asarray(center_nodes.nodes[i].coordinates)[:2]
+            tan_temp = np.arctan2(y_init, x_init)
+            if tan_temp < 0:
+                phase_all[i] = tan_temp + 2*np.pi
+            else:
+                phase_all[i] = tan_temp
+            # coord_centernodes_init[i,:] = np.asarray(center_nodes.nodes[i].coordinates)[:2]
+            disp_cur = node.data
+            disp_centernodes[i, :] = np.array([disp_cur[0], disp_cur[1]])
+            coord_centernodes_init[i,:] = np.array([x_init, y_init])
+        
+        #calculate r disp and use phase to resort disp
+        # printAB(disp_centernodes)
+        coord_centernodes_final = coord_centernodes_init + disp_centernodes
+        disp_r = np.array([np.linalg.norm(coord_centernodes_final[i,:]) for i in range(num_center_nodes)]) \
+            - np.array([np.linalg.norm(coord_centernodes_init[i,:]) for i in range(num_center_nodes)])
+
+        resort_idx = np.argsort(phase_all)
+        disp_r = disp_r[resort_idx]
+        phase_all = phase_all[resort_idx]
+
+        fft_disp_r = np.fft.rfft(disp_r - np.mean(disp_r))
+        freq = np.arange(int(disp_r.size/2) + 1)
+        val = freq[np.argmax(np.abs(fft_disp_r))]
+
+        #todo: not giving the right mode, check python 3 version w/ current disp_r
+        # printAB(phase_all)
+        # printAB(fft_disp_r)
+        return val
+
+    
     def post_process_centernodes(self):
         # Import the relavent data
         project = self.project + '_post_buckling'
@@ -691,6 +746,32 @@ class full_shell:
                 hourglassControl=DEFAULT), ElemType(elemCode=S3, elemLibrary=STANDARD)), regions=(self.part.faces, ))
         p4.generateMesh()
 
+    def edit_keywords_transverse_shear(self):
+        m = self.model
+
+        '''edit transverse shear lines bc of a bug crryyy'''
+        m.keywordBlock.synchVersions(storeNodesAndElements=False)
+        keyWords = m.keywordBlock.sieBlocks
+
+        split_on = '\n'
+        for i,key in enumerate(keyWords):
+            if key.startswith('*Transverse Shear'):
+                split_key = key.split(split_on)
+                split_key[0] += ' Stiffness'
+                m.keywordBlock.replace(i,split_on.join(split_key))
+
+    def add_transverse_shear(self, section_list):
+        #C10 = 0.13175330
+        # K11 = 592
+        # K12 = K11/1.2
+        #parameters from david
+
+        K11 = 1200.
+        K12 = K11/1.2
+        
+        for sec in section_list:
+            sec.TransverseShearShell(k11=K11, k12=K12, k22=K11)
+      
     def make_geometry(self, nonlinear_model = False):
         try:
             os.remove(self.project+'.lck')
@@ -792,21 +873,25 @@ class full_shell:
 
 
         '''SECTIONS'''
-        m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
+        sec_1 = m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
             integrationRule=SIMPSON, material='NH-1', name='Section-1', 
             nodalThicknessField='', numIntPts=5, poissonDefinition=VALUE, poisson = self.nu_shell, 
             preIntegrate=OFF, temperature=GRADIENT, thickness=t1, thicknessField='', 
             thicknessModulus=None, thicknessType=UNIFORM, useDensity=OFF)
-        m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
+        sec_2 = m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
             integrationRule=SIMPSON, material='NH-2', name='Section-2', 
             nodalThicknessField='', numIntPts=5, poissonDefinition=VALUE, poisson = self.nu_shell, 
             preIntegrate=OFF, temperature=GRADIENT, thickness=t2, thicknessField='', 
             thicknessModulus=None, thicknessType=UNIFORM, useDensity=OFF)
-        m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
+        sec_cap = m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
             integrationRule=SIMPSON, material='NH-cap', name='Section-cap', 
             nodalThicknessField='', numIntPts=5, poissonDefinition=VALUE, poisson = self.nu_shell, 
             preIntegrate=OFF, temperature=GRADIENT, thickness=w, thicknessField='', 
             thicknessModulus=None, thicknessType=UNIFORM, useDensity=OFF)
+        
+        sec_all = [sec_1, sec_2, sec_cap]
+        if self.transverse_shear and nonlinear_model:
+            self.add_transverse_shear(sec_all)
 
         p4.SectionAssignment(offset=0.0, offsetField='', offsetType=BOTTOM_SURFACE, region=p4.sets['body-1'],
             sectionName='Section-1', thicknessAssignment=FROM_SECTION)
@@ -815,8 +900,12 @@ class full_shell:
         p4.SectionAssignment(offset=0.0, offsetField='', offsetType=BOTTOM_SURFACE, region=p4.sets['cap_face'],
             sectionName='Section-cap', thicknessAssignment=FROM_SECTION)
 
+        
         '''MESH'''
         self.mesh_part()
+
+        if self.transverse_shear and nonlinear_model:
+            self.edit_keywords_transverse_shear()
 
         '''SETS'''
         rp1 = a.ReferencePoint(point=(0.0, 0.0, 0.0))
@@ -826,9 +915,10 @@ class full_shell:
         set_rp2 = a.Set(name='rp2', referencePoints=(a.referencePoints[rp2.id], ))
         set_rp3 = a.Set(name='rp3', referencePoints=(a.referencePoints[rp3.id], ))
 
+        
         '''MATERIALS'''
         self.add_materials(nonlinear_model)
-        
+
         '''CENTRAL NODES'''
         top_nodes = p4.sets['cap_face'].nodes
         top_norm = []
@@ -863,6 +953,8 @@ class full_shell:
 
         m.FluidCavity(cavityPoint=set_rp2, cavitySurface=a.surfaces['Surf-main'],
             createStepName='Initial', interactionProperty='IntProp-1', name='Int-1')
+        
+        
 
         
 
