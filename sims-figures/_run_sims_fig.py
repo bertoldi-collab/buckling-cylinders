@@ -27,7 +27,8 @@ test = full_shell(project = proj_name, simpProps = geo_props_use, imperfection =
 # delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log'])
 # delete_extra_files(jname_nonlin)
 
-test.post_process_num_folds()
+num_folds = test.post_process_num_folds()
+printAB(num_folds)
 
 #FOUR FOLDS
 #v100: ran normal, failed at 0.777: looks like we got local hourglassing that caused the sample to bend

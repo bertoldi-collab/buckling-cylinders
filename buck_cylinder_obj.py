@@ -46,10 +46,15 @@ import os
 import sys
 
 def printAB(string_):
+    '''prints to the abaqus command line'''
     print >> sys.__stdout__, string_
 
 def delete_extra_files(jname, additional_ext = None):
-    #delete extra files
+    '''
+    deletes extra files:
+    * jname: job name to delete files from
+    * additional_ext: optional, pass a list of additional ext to remove jname.ext
+    '''
     extra_file_extensions = ['.com', '.prt', '.sim', '.dmp', '.ipm', '.mdl', '.simlog', '.stt',
         '.pac', '.cid', '.sel', '.res', '.023', '.SMAFocus']
     if additional_ext is not None:
@@ -59,6 +64,11 @@ def delete_extra_files(jname, additional_ext = None):
             os.remove(jname + extra_file_extensions[i])
 
 def run_inp(jname, num_threads = 4):
+    '''
+    runs abaqus job
+    * jname: runs jname.inp
+    * num_threads: default 4
+    '''
     if os.path.exists(jname + '.inp'):
         printAB("running " + jname)
         j = mdb.JobFromInputFile(activateLoadBalancing=False, atTime=None,
@@ -74,6 +84,16 @@ def run_inp(jname, num_threads = 4):
 
 class full_shell:
     def __init__(self, project, imperfection = None, fullProps = None, simpProps = None):
+        '''
+        makes a shell model of thin-walled elastomeric cylinders; one of {fullProps, simpProps} 
+            must be specified
+        * project: name of project; specific cae/inp/etc files will be appended w/ analysis type
+        * imperfection: float describing how much imperfection to put into any post linear buckling
+            analysis; always implemented as a multiplication factor of t1, so the default value of 0.004
+            is 0.004*t1
+        * fullProps: named tuple defined in geo_prop.py; used for bending analyses, 
+        * simpProps: named tuple defined in geo_prop.py; used for analyses when all E and t are the same
+        '''
         self.project = project
         self.post_instability = True
 
@@ -121,20 +141,26 @@ class full_shell:
         self.mesh_order = 'lin' #pass in 'quadratic' for 2nd order
         self.transverse_shear = False
 
-    def make_job(self,extra_str,num_threads = 1):
+    def make_job(self,extra_str):
+        '''
+        makes an abaqus job and writes the inp file, returns the job name
+        '''
         m = self.model
         m.rootAssembly.regenerate()
-        jname = self.project + extra_str
+        jname = str(self.project + extra_str)
         j = mdb.Job(atTime=None, contactPrint=OFF, description='', echoPrint=OFF, 
             explicitPrecision=SINGLE, getMemoryFromAnalysis=True, historyPrint=OFF, 
             memory=90, memoryUnits=PERCENTAGE, model='Model-1', modelPrint=OFF, 
             multiprocessingMode=DEFAULT, name=jname, nodalOutputPrecision=SINGLE, 
-            numCpus=num_threads, numGPUs=0, queue=None, resultsFormat=ODB, scratch='', type=
+            numCpus=1, numGPUs=0, queue=None, resultsFormat=ODB, scratch='', type=
             ANALYSIS, userSubroutine='', waitHours=0, waitMinutes=0)
         j.writeInput()
         return jname
 
     def run_linear_model(self):
+        '''
+        makes a linear buckling model and runs it; returns the job name
+        '''
         jname = self.make_linear_model()
         run_inp(jname)
         self.post_process_lin_buckle(eig_name = '_lin_buckling')
@@ -142,7 +168,7 @@ class full_shell:
 
     def make_nonlin_multi_buckle(self,bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None):
         '''
-        makes a model with N [static, frequency] steps
+        makes a model with N [static, frequency] steps; returns the job name
         *bdamp: beta damping value (is this needed? I'm doing static)
         *max_temp_mult: between [0,1], how much \Delta V/V_0 to remove
         *num_steps: the number of [static, freq] pairs
@@ -605,6 +631,7 @@ class full_shell:
             disp_cur = node.data
             disp_centernodes[i, :] = np.array([disp_cur[0], disp_cur[1]])
             coord_centernodes_init[i,:] = np.array([x_init, y_init])
+        odb.close()
         
         #calculate r disp and use phase to resort disp
         # printAB(disp_centernodes)
@@ -625,7 +652,6 @@ class full_shell:
         # printAB(fft_disp_r)
         return val
 
-    
     def post_process_centernodes(self):
         # Import the relavent data
         project = self.project + '_post_buckling'
