@@ -26,18 +26,20 @@ for i in range(len(R_try)):
     for j in range(len(H_try)):
         H_cur = H_try[j]
         for k in range(len(t_try)):
+            printAB(idx_try)
             t_cur = t_try[k]
             geo_prop_cur = geoProps(R_cur, H_cur, 5, t_cur, 1.4) #all else is taken from geo_prop_three
 
             test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur, imperfection = 0.05)
-            jname_lin = test.run_linear_model()
-            jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50)
+            # jname_lin = test.run_linear_model()
+            # jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50)
 
-            run_inp(jname_multi)
+            # run_inp(jname_multi)
+            test.post_process_multi_buckle()
             # num_folds_all[i,j,k] = num_folds
 
-            delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log', '.dat', '.msg'])
-            delete_extra_files(jname_multi, ['.log', '.dat', '.msg'])
+            # delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log', '.dat', '.msg'])
+            # delete_extra_files(jname_multi, ['.log', '.dat', '.msg'])
 
             idx_try += 1
 # printAB(num_folds_all)
