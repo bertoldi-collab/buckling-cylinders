@@ -140,6 +140,7 @@ class full_shell:
         self.mesh_shape = 'quad' #pass in 'tri' for triangular elements
         self.mesh_order = 'lin' #pass in 'quadratic' for 2nd order
         self.transverse_shear = False
+        self.static_stable = True
 
     def make_job(self,extra_str):
         '''
@@ -166,7 +167,7 @@ class full_shell:
         self.post_process_lin_buckle(eig_name = '_lin_buckling')
         return jname
 
-    def make_nonlin_multi_buckle(self,bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None):
+    def make_nonlin_multi_buckle(self, bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None):
         '''
         makes a model with N [static, frequency] steps; returns the job name
         *bdamp: beta damping value (is this needed? I'm doing static)
@@ -367,6 +368,7 @@ class full_shell:
         '''CONTACT'''
         contact_prop = m.ContactProperty('IntProp-2')
         contact_prop.NormalBehavior(allowSeparation=ON, constraintEnforcementMethod=DEFAULT, pressureOverclosure=HARD)
+        contact_prop.TangentialBehavior(formulation=ROUGH)
 
         int_contact = m.ContactStd(createStepName='Initial', name='Int-2')
         int_contact.includedPairs.setValuesInStep(stepName='Initial', useAllstar=ON)
@@ -458,12 +460,14 @@ class full_shell:
                 max_inc_step = np.min([0.05*len(temp_list), 1])
                 static_step_name = 'Step-' + str(idx)
                 buckle_step_name = static_step_name + '-buckle'
-                static_step = m.StaticStep(initialInc=0.01*len(temp_list), maxInc=max_inc_step, maxNumInc=nincre, minInc=1e-11,
-                    name=static_step_name, nlgeom=ON, previous=prev_step_name, adaptiveDampingRatio=None, continueDampingFactors=False,
-                    stabilizationMagnitude=0.0002, stabilizationMethod=DAMPING_FACTOR)
-                # m.StaticStep(adaptiveDampingRatio=None, 
-                #     continueDampingFactors=False, name='Step-1', nlgeom=ON, previous='Initial', 
-                #     stabilizationMagnitude=0.0002, stabilizationMethod=DAMPING_FACTOR)
+
+                if self.static_stable:
+                    static_step = m.StaticStep(initialInc=0.01*len(temp_list), maxInc=max_inc_step, maxNumInc=nincre, minInc=1e-11,
+                        name=static_step_name, nlgeom=ON, previous=prev_step_name, adaptiveDampingRatio=None, continueDampingFactors=False,
+                        stabilizationMagnitude=0.0002, stabilizationMethod=DAMPING_FACTOR)
+                else:
+                    static_step = m.StaticStep(initialInc=0.01*len(temp_list), maxInc=max_inc_step, maxNumInc=nincre, minInc=1e-11,
+                        name=static_step_name, nlgeom=ON, previous=prev_step_name)
                 # static_step.control.setValues(allowPropagation=OFF,resetDefaultValues=OFF,
                 #     timeIncrementation=(4.0, 8.0, 9.0, 16.0, 10.0, 4.0,12.0, 25.0, 6.0, 3.0, 50.0))
                 #note: the 25.0 above is the number of 1U, 2U,...etc attempts, default is 5
