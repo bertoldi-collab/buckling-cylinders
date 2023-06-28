@@ -1038,6 +1038,7 @@ class full_3d(cylinder_model):
 
         #now 3d stuff
         self.mesh_shape = 'hex' #todo: find alternatives?
+        self.num_elem_thickness = int(np.maximum(2, np.ceil(self.t1/self.h_element)))
 
     def mesh_part(self, face_ring, cell_body, cell_cap):
         self.part.seedPart(deviationFactor=0.1, minSizeFactor=0.1, size=self.h_element)
@@ -1152,7 +1153,14 @@ class full_3d(cylinder_model):
         p_merged.SectionAssignment(offset=0.0, offsetField='', offsetType=MIDDLE_SURFACE, region=set_cap, sectionName='Section-cap', thicknessAssignment=FROM_SECTION)
 
         '''Mesh'''
-        #todo: partition here code is in current jnl
+        #partition ring face for multiple elements through thickness, set by num_elem_thickness
+        s_partition = m.ConstrainedSketch(gridSpacing=1.49, name='__profile__', sheetSize=200)
+        additional_R = self.t1 / self.num_elem_thickness
+        for i in range(1,self.num_elem_thickness):
+            s_partition.CircleByCenterPerimeter(center=(0.0, 0.0), point1=(R + i*additional_R, 0.0))
+
+        p_merged.PartitionFaceBySketch(faces=f_ring, sketch=s_partition)
+
         self.mesh_part(face_ring = f_ring, cell_cap = c_cap, cell_body = c_body)
 
         '''ref pts'''
