@@ -1,0 +1,47 @@
+import sys
+
+sys.path.append('../')
+
+from buck_cylinder_obj import *
+from geo_prop import *
+from time import time
+
+idx_try = 210
+bdamp = 0.0001
+
+num_folds = 3
+proj_name = str(num_folds) + 'fold-test_static-stable-'
+# proj_name = 'bender-test_nu-'
+
+if num_folds == 2: props_use = geo_prop_two
+elif num_folds == 3: props_use = geo_prop_three
+elif num_folds == 4: props_use = geo_prop_four
+else: raise ValueError('yo')
+
+
+num_samp = 5
+damping_sweep = 2*np.logspace(-7, -4, num_samp)
+
+for i, stab_factor in enumerate(damping_sweep):
+    test = full_shell(project = proj_name+str(idx_try), simpProps = props_use, imperfection = 0.05)
+    test.stabilization_factor = stab_factor
+    test.nu_shell = 0.45
+    # test = full_shell(project = proj_name+str(idx_try), fullProps = geo_prop_bend, imperfection = 0.05)
+    jname_lin = test.run_linear_model()
+    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50)
+
+    run_inp(jname_multi)
+
+    test.post_process_multi_buckle()
+
+    delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.odb'])
+    delete_extra_files(jname_multi)
+
+    idx_try += 1
+
+#v100s: 2folds up to 0.55
+#v200s: 3folds up to 0.55 (eig_idx manually passed in as 3)
+#v210s: 3folds up to 0.45 + nu = 0.45 (eig_idx passed in)
+#v300s: 4folds up to 0.55
+#v310s: 4folds up to 0.30
+#v320s: 4folds up to 0.30 + nu = 0.45
