@@ -95,7 +95,6 @@ class full_shell:
         * simpProps: named tuple defined in geo_prop.py; used for analyses when all E and t are the same
         '''
         self.project = project
-        self.post_instability = True
 
         if fullProps is not None:
             self.R = float(fullProps.R)
@@ -135,12 +134,14 @@ class full_shell:
         # original mult: 0.25 * 1.5/50
         self.h_element = 1.5/50 * self.H
         self.temp_set = -0.332 #removes whole volume
+
         self.nu_shell = 0.5
 
         self.mesh_shape = 'quad' #pass in 'tri' for triangular elements
         self.mesh_order = 'lin' #pass in 'quadratic' for 2nd order
         self.transverse_shear = False
         self.static_stable = True
+        self.stabilization_factor = 0.0002
 
     def make_job(self,extra_str):
         '''
@@ -167,13 +168,14 @@ class full_shell:
         self.post_process_lin_buckle(eig_name = '_lin_buckling')
         return jname
 
-    def make_nonlin_multi_buckle(self, bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None):
+    def make_nonlin_multi_buckle(self, bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None, extra_imper = None):
         '''
         makes a model with N [static, frequency] steps; returns the job name
-        *bdamp: beta damping value (is this needed? I'm doing static)
-        *max_temp_mult: between [0,1], how much \Delta V/V_0 to remove
-        *num_steps: the number of [static, freq] pairs
-        *eig_idx: allows manually specifying the index to pull the imperfection mode from
+        * bdamp: beta damping value (is this needed? I'm doing static)
+        * max_temp_mult: between [0,1], how much \Delta V/V_0 to remove
+        * num_steps: the number of [static, freq] pairs
+        * eig_idx: allows manually specifying the index to pull the imperfection mode from
+        * extra_imper: should be a list of tuples (eig_idx, imperfection)
         '''
         eig_name = '_lin_buckling'
         self.bdamp = bdamp
@@ -187,7 +189,11 @@ class full_shell:
         self.finish_nonlinear_initial()
 
         self.finish_nonlinear_steps(temp_list = temp_all)
-        self.add_imperfection(eig_idx, eig_name = eig_name)
+        idx_keyword = self.add_imperfection(eig_idx, eig_name = eig_name)
+
+        if extra_imper is not None:
+            self.add_extra_imperfections(idx_keyword, extra_imper)
+        
         jname = self.save_cae_write_job('_multi_buckling')
 
         return jname
@@ -215,7 +221,7 @@ class full_shell:
         jname = self.save_cae_write_job(extra_str)
         return jname
 
-    def make_nonlin_model(self, bdamp, is_buckling = False, temp_set = None, eig_idx = None, eig_name = '_lin_buckling',  alt_name = None):
+    def make_nonlin_model(self, bdamp, is_buckling = False, temp_set = None, eig_idx = None, eig_name = '_lin_buckling',  extra_imper = None, alt_name = None):
         '''
         makes a general nonlinear model w/ some imperfection from a previous simulation
         * bdamp: damping value
@@ -223,6 +229,7 @@ class full_shell:
         * temp_set: default None, allows setting final temp manually
         * eig_idx: default None, allows setting index to pull impefection mode from eig_name manually
         * eig_name: default '_lin_buckling', defines fil file to pull buckling mode from
+        * extra_imper: should be a list of tuples (eig_idx, imperfection)
         * alt_name: default '_post_buckling', defines name of job file
         '''
 
@@ -245,7 +252,10 @@ class full_shell:
         self.make_geometry(nonlinear_model = True)
         self.finish_nonlinear_initial()
         self.finish_nonlinear_steps(make_dyn = not is_buckling)
-        self.add_imperfection(eig_idx, eig_name = eig_name)
+        idx_keyword = self.add_imperfection(eig_idx, eig_name = eig_name)
+
+        if extra_imper is not None:
+            self.add_extra_imperfections(idx_keyword, extra_imper)
 
         jname = self.save_cae_write_job(extra_str)
         return jname
@@ -351,11 +361,37 @@ class full_shell:
         '''WRITE IMPERFECTION'''
         m.keywordBlock.synchVersions(storeNodesAndElements=False)
         keyWords = m.keywordBlock.sieBlocks
-        keyLine = '** ----------------------------------------------------------------\n** \n** STEP: Step-1\n** '
-        idx_change = keyWords.index(keyLine)
-        m.keywordBlock.replace(idx_change,
-            '** ----------------------------------------------------------------\n*IMPERFECTION,FILE='+
-            self.project+eig_name+',STEP='+str(step_num)+'\t\n'+str(eig_idx)+','+str(imper)+'\n** \n** STEP: Step-1\n**')
+        # printAB(keyWords)
+        imperfection_line = '*IMPERFECTION,FILE='+self.project+eig_name+',STEP='+str(step_num)
+        imperfection_val = str(eig_idx)+','+str(imper)
+        split_on = '\n'
+        for i,key in enumerate(keyWords):
+            if key.startswith('*Step, name=Step-1'):
+                idx_change = i - 1
+                #relevant idx is the one before
+                split_key = keyWords[i-1].split(split_on)
+                split_key.insert(1,imperfection_line)
+                split_key.insert(2,imperfection_val)
+
+                joined_key = split_on.join(split_key)
+                m.keywordBlock.replace(i-1, joined_key)
+                break
+        return idx_change
+
+    def add_extra_imperfections(self, idx_keyword, imper_info):
+        m = self.model
+        keyWords = m.keywordBlock.sieBlocks
+
+        split_on = '\n'
+        split_key = keyWords[idx_keyword].split(split_on)
+
+        idx_start = 3
+        for i, (eig_idx, imperfection) in enumerate(imper_info):
+            imperfection_val = str(eig_idx) + ',' + str(imperfection)
+            split_key.insert(idx_start + i,imperfection_val)
+
+        joined_key = split_on.join(split_key)
+        m.keywordBlock.replace(idx_keyword, joined_key)
 
     def finish_nonlinear_initial(self):
         #missing: steps, requests, temp_set bcs
@@ -457,16 +493,19 @@ class full_shell:
                 idx = i + 1
 
                 #create static step for moving, then buckle step for analysis
-                max_inc_step = np.min([0.05*len(temp_list), 1])
+                inc_max = np.min([0.05*len(temp_list), 1])
+                inc_initial = np.min([0.01*len(temp_list), 1])
+                inc_min = 1e-11
+
                 static_step_name = 'Step-' + str(idx)
                 buckle_step_name = static_step_name + '-buckle'
-
+                
                 if self.static_stable:
-                    static_step = m.StaticStep(initialInc=0.01*len(temp_list), maxInc=max_inc_step, maxNumInc=nincre, minInc=1e-11,
+                    static_step = m.StaticStep(initialInc=inc_initial, maxInc=inc_max, maxNumInc=nincre, minInc=inc_min,
                         name=static_step_name, nlgeom=ON, previous=prev_step_name, adaptiveDampingRatio=None, continueDampingFactors=False,
-                        stabilizationMagnitude=0.0002, stabilizationMethod=DAMPING_FACTOR)
+                        stabilizationMagnitude=self.stabilization_factor, stabilizationMethod=DAMPING_FACTOR)
                 else:
-                    static_step = m.StaticStep(initialInc=0.01*len(temp_list), maxInc=max_inc_step, maxNumInc=nincre, minInc=1e-11,
+                    static_step = m.StaticStep(initialInc=inc_initial, maxInc=inc_max, maxNumInc=nincre, minInc=inc_min,
                         name=static_step_name, nlgeom=ON, previous=prev_step_name)
                 # static_step.control.setValues(allowPropagation=OFF,resetDefaultValues=OFF,
                 #     timeIncrementation=(4.0, 8.0, 9.0, 16.0, 10.0, 4.0,12.0, 25.0, 6.0, 3.0, 50.0))
