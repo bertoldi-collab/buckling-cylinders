@@ -395,7 +395,7 @@ class cylinder_model(object):
         m = self.model
         a = self.aa
 
-        set_rp2 = a.sets['rp2']
+        fluid_rp = a.sets['rp1']
 
 
         '''CONTACT'''
@@ -419,13 +419,13 @@ class cylinder_model(object):
         '''TEMPERATURE FIELDS FOR VOLUME CHANGE'''
         #self.temp_set was originally -0.332 for taking out full volume
         m.Temperature(createStepName='Initial', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
-            distributionType=UNIFORM, magnitudes=(0.0, ), name='Predefined Field-1', region=a.sets['rp2'])
+            distributionType=UNIFORM, magnitudes=(0.0, ), name='Predefined Field-1', region=fluid_rp)
 
     def finish_nonlinear_riks(self):
         m = self.model
         # a = self.aa
 
-        set_rp2 = self.aa.sets['rp2']
+        fluid_rp = self.aa.sets['rp1']
 
         nincre = 5000
         nincre_output = 200 #used to be 5000
@@ -443,7 +443,7 @@ class cylinder_model(object):
 
         #temp bd condition
         m.Temperature(amplitude='Amp-1', createStepName='Step-1', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
-        distributionType=UNIFORM, magnitudes=(self.temp_set, ), name='Predefined Field-2', region=set_rp2)
+        distributionType=UNIFORM, magnitudes=(self.temp_set, ), name='Predefined Field-2', region=set_rp1)
 
     def finish_nonlinear_steps(self, make_dyn = False, make_riks = False, temp_list = None):
         '''
@@ -457,7 +457,7 @@ class cylinder_model(object):
         m = self.model
         # a = self.aa
 
-        set_rp2 = self.aa.sets['rp2']
+        fluid_rp = self.aa.sets['rp1']
 
         nincre = 5000
         nincre_output = 200 #used to be 5000
@@ -481,7 +481,7 @@ class cylinder_model(object):
 
             #temp bd condition
             m.Temperature(amplitude='Amp-1', createStepName='Step-1', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
-                distributionType=UNIFORM, magnitudes=(self.temp_set, ), name='Predefined Field-2', region=set_rp2)
+                distributionType=UNIFORM, magnitudes=(self.temp_set, ), name='Predefined Field-2', region=fluid_rp)
         
         else:
             prev_step_name = 'Initial'
@@ -517,7 +517,7 @@ class cylinder_model(object):
 
                 m.Temperature(amplitude=current_amp_name, createStepName=static_step_name,
                     crossSectionDistribution=CONSTANT_THROUGH_THICKNESS, distributionType=UNIFORM,
-                    magnitudes=(current_temp, ), name='Temp-Move-' + str(idx), region=set_rp2)
+                    magnitudes=(current_temp, ), name='Temp-Move-' + str(idx), region=fluid_rp)
                 # m.FluidCavityPressureBC(amplitude=UNSET, createStepName=buckle_step_name,
                 #     fixed=OFF, fluidCavity='Int-1', magnitude=-1.0,  name='BC-buckle-' + str(idx))
 
@@ -533,7 +533,7 @@ class cylinder_model(object):
         #history outputs
         m.historyOutputRequests['H-Output-1'].setValues(numIntervals=nincre_output, timeMarks=OFF, variables=('ALLSE', 'ALLKE'))
         m.HistoryOutputRequest(createStepName='Step-1', name='H-Output-1-cavity', numIntervals=nincre_output, rebar=EXCLUDE, 
-            region=set_rp2, sectionPoints=DEFAULT, timeMarks=OFF, variables=('PCAV', 'CVOL', 'NT'))
+            region=fluid_rp, sectionPoints=DEFAULT, timeMarks=OFF, variables=('PCAV', 'CVOL', 'NT'))
 
         #field outputs
         m.fieldOutputRequests['F-Output-1'].setValues(numIntervals=nincre_output, timeMarks=OFF,
@@ -792,7 +792,7 @@ class cylinder_model(object):
         self.model.FluidCavityProperty(bulkModulusTable=((2000.0, ), ), expansionTable=((1.0, ), ),
             fluidDensity=1e-09, name='IntProp-1', useBulkModulus=True, useExpansion=True)
 
-        self.model.FluidCavity(cavityPoint=self.aa.sets['rp2'], cavitySurface=surf_inner,
+        self.model.FluidCavity(cavityPoint=self.aa.sets['rp1'], cavitySurface=surf_inner,
             createStepName='Initial', interactionProperty='IntProp-1', name='Int-1')
 
 
