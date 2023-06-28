@@ -83,8 +83,8 @@ def run_inp(jname, num_threads = 4):
 
 
 #super class
-class cylinder_model:
-	def __init__(self, project, imperfection = None, fullProps = None, simpProps = None):
+class cylinder_model(object):
+    def __init__(self, project, imperfection = None, fullProps = None, simpProps = None):
         '''
         makes a shell model of thin-walled elastomeric cylinders; one of {fullProps, simpProps} 
             must be specified
@@ -531,7 +531,7 @@ class cylinder_model:
             m.keywordBlock.replace(nlinesInput-2, '\n*Output, field, variable=PRESELECT\n*NODE FILE\nU,')
 
         #history outputs
-        m.historyOutputRequests['H-Output-1'].setValues(numIntervals=nincre_output, timeMarks=OFF, variables=('ALLSE', ))
+        m.historyOutputRequests['H-Output-1'].setValues(numIntervals=nincre_output, timeMarks=OFF, variables=('ALLSE', 'ALLKE'))
         m.HistoryOutputRequest(createStepName='Step-1', name='H-Output-1-cavity', numIntervals=nincre_output, rebar=EXCLUDE, 
             region=set_rp2, sectionPoints=DEFAULT, timeMarks=OFF, variables=('PCAV', 'CVOL', 'NT'))
 
@@ -788,14 +788,22 @@ class cylinder_model:
             for i in range(len(self.mat_all)):
                 self.mat_all[i].Damping(alpha=0., beta=self.bdamp)
 
+    def make_fluid_cavity_interaction(self, surf_inner):
+        self.model.FluidCavityProperty(bulkModulusTable=((2000.0, ), ), expansionTable=((1.0, ), ),
+            fluidDensity=1e-09, name='IntProp-1', useBulkModulus=True, useExpansion=True)
+
+        self.model.FluidCavity(cavityPoint=self.aa.sets['rp2'], cavitySurface=surf_inner,
+            createStepName='Initial', interactionProperty='IntProp-1', name='Int-1')
+
+
 
 
 class full_shell(cylinder_model):
-	def __init__(self, project, imperfection = None, fullProps = None, simpProps = None):
-		super(full_shell, self).__init__(project, imperfection = imperfection, fullProps = fullProps, simpProps = simpProps)
+    def __init__(self, project, imperfection = None, fullProps = None, simpProps = None):
+        super(full_shell, self).__init__(project, imperfection = imperfection, fullProps = fullProps, simpProps = simpProps)
 
-		#now shell stuff
-		self.nu_shell = 0.5
+        #now shell stuff
+        self.nu_shell = 0.5
         self.mesh_shape = 'quad' #pass in 'tri' for triangular elements
         self.transverse_shear = False
 
@@ -945,6 +953,8 @@ class full_shell(cylinder_model):
             p4.edges[e2.index:e2.index+1],p4.edges[e3.index:e3.index+1], ))
         p4.Set(name='curvature',edges=(p4.edges[e4.index:e4.index+1],))
 
+        '''MATERIALS'''
+        self.add_materials(nonlinear_model)
 
         '''SECTIONS'''
         sec_1 = m.HomogeneousShellSection(idealization=NO_IDEALIZATION, 
@@ -989,9 +999,6 @@ class full_shell(cylinder_model):
         set_rp2 = a.Set(name='rp2', referencePoints=(a.referencePoints[rp2.id], ))
         set_rp3 = a.Set(name='rp3', referencePoints=(a.referencePoints[rp3.id], ))
 
-        
-        '''MATERIALS'''
-        self.add_materials(nonlinear_model)
 
         '''CENTRAL NODES'''
         top_nodes = p4.sets['cap_face'].nodes
@@ -1018,27 +1025,40 @@ class full_shell(cylinder_model):
 
         '''FLUID-CAVITY INTERACTION'''
         surfs = [a.Surface(name='Surf-' + str(i+1), side2Faces=i_all.faces[f.index:f.index+1]) for i,f in enumerate([f1,f2,f3,f4])]
-        a.SurfaceByBoolean(name='Surf-main', surfaces=(surfs))
+        surf_inner = a.SurfaceByBoolean(name='Surf-main', surfaces=(surfs))
 
-        m.FluidCavityProperty(bulkModulusTable=((2000.0, ), ), expansionTable=((1.0, ), ),
-            fluidDensity=1e-09, name='IntProp-1', useBulkModulus=True, useExpansion=True)
-
-        m.FluidCavity(cavityPoint=set_rp2, cavitySurface=a.surfaces['Surf-main'],
-            createStepName='Initial', interactionProperty='IntProp-1', name='Int-1')
+        self.make_fluid_cavity_interaction(surf_inner)
 
 
 class full_3d(cylinder_model):
-	def __init__(self, project, imperfection = None, fullProps = None, simpProps = None):
-		super(full_shell, self).__init__(project, imperfection = imperfection, fullProps = fullProps, simpProps = simpProps)
+    def __init__(self, project, imperfection = None, fullProps = None, simpProps = None):
+        if fullProps is not None:
+            raise ValueError("can't implement full props in 3d yet")
+        super(full_3d, self).__init__(project, imperfection = imperfection, fullProps = fullProps, simpProps = simpProps)
 
-		#now 3d stuff
-		self.mesh_shape = 'quad' #todo: default should prob be different
+        #now 3d stuff
+        self.mesh_shape = 'hex' #todo: find alternatives?
 
-	def mesh_part(self):
-		pass
+    def mesh_part(self, face_ring, cell_body, cell_cap):
+        self.part.seedPart(deviationFactor=0.1, minSizeFactor=0.1, size=self.h_element)
 
-	def make_geometry(self, nonlinear_model = False):
-		try:
+        #stack direction
+        self.part.assignStackDirection(cells=self.part.cells, referenceRegion=face_ring[0])
+
+        self.part.setMeshControls(elemShape=HEX_DOMINATED,regions=cell_cap, technique=SWEEP, algorithm=ADVANCING_FRONT)
+        self.part.setMeshControls(elemShape=HEX,regions=cell_body, technique=SWEEP, algorithm = MEDIAL_AXIS)
+        
+
+        # self.part.setMeshControls(elemShape = TET, regions = CellArray(self.part.sets['body_cell'].cells), technique = STRUCTURED)
+        self.part.setElementType(elemTypes=(ElemType(
+            elemCode=C3D8H, elemLibrary=STANDARD, kinematicSplit=AVERAGE_STRAIN, 
+            hourglassControl=DEFAULT), ElemType(elemCode=C3D6H, elemLibrary=STANDARD), 
+            ElemType(elemCode=C3D4H, elemLibrary=STANDARD)), regions=(self.part.cells, ))
+
+        self.part.generateMesh()
+
+    def make_geometry(self, nonlinear_model = False):
+        try:
             os.remove(self.project+'.lck')
             os.remove(self.project+'.odb')
         except OSError:
@@ -1071,3 +1091,89 @@ class full_3d(cylinder_model):
         Mdb()
         m = mdb.models['Model-1']
         self.model = m
+
+
+        #s1 --> p1 and is the thin-walled shell
+        s1 = m.ConstrainedSketch(name='s1', sheetSize=200.0)
+        s1.CircleByCenterPerimeter(center=(0.0, 0.0), point1=(0.0, R))
+        s1.CircleByCenterPerimeter(center=(0.0, 0.0), point1=(0.0, R + t1))
+
+        #s2 --> p2 and is the base
+        s2 = m.ConstrainedSketch(name='s2', sheetSize=200.0)
+        s2.CircleByCenterPerimeter(center=(0.0, 0.0), point1=(0.0, R + t1))
+
+        '''PARTS'''
+        p1 = m.Part(name=part_name+'_1', dimensionality=THREE_D, type=DEFORMABLE_BODY)
+        p1.BaseSolidExtrude(depth=H, sketch=s1)
+
+        p2 = m.Part(name=part_name+'_2', dimensionality=THREE_D, type=DEFORMABLE_BODY)
+        p2.BaseSolidExtrude(depth=w, sketch=s2)
+
+        '''ASSEMBLY'''
+        a = m.rootAssembly
+        self.aa = a
+        i1 = a.Instance(dependent=ON, name=assembly_name+'_1',part=p1)
+        i2 = a.Instance(dependent=ON, name=assembly_name+'_2',part=p2)
+
+        a.translate(instanceList=(assembly_name+'_2', ), vector=(0.0, 0.0, H))
+
+        a.InstanceFromBooleanMerge(domain=GEOMETRY,instances=tuple(a.instances.values()),
+            keepIntersections=ON, name='Merged', originalInstances=SUPPRESS)
+        #start on line 146 of nonlin 3d
+
+        p_merged = m.parts['Merged']
+        self.part = p_merged
+        i_all = a.instances['Merged-1']
+
+        '''important sets'''
+        f_cap = p_merged.faces.getByBoundingCylinder(center1 = (0,0,H + w - h_element), center2 = (0,0,H + w + h_element), radius = R + t1 + h_element)
+        p_merged.Set(name = 'cap_face', faces = f_cap)
+
+        f_ring = p_merged.faces.getByBoundingCylinder(center1 = (0,0,0 - h_element), center2 = (0,0,0 + h_element), radius = R + t1 + h_element)
+        p_merged.Set(name = 'ring', faces = f_ring)
+        # f_cap = p_merged.faces.findAt((0.,0.,H + w))
+        # printAB(f_cap)
+        # p_merged.Set(name='cap_face', faces=FaceArray((f_cap,)))
+
+        c_cap = p_merged.cells.getByBoundingCylinder(center1 = (0,0,H - h_element), center2 = (0,0,H + w + h_element), radius = R + t1 + h_element)
+        set_cap = p_merged.Set(name = 'cap_cell', cells = c_cap)
+
+        c_body = p_merged.cells.getByBoundingCylinder(center1 = (0,0,0 - h_element), center2 = (0,0,H + h_element), radius = R + t1 + h_element)
+        set_body = p_merged.Set(name = 'body_cell', cells = c_body)
+
+        '''Materials'''
+        self.add_materials(nonlinear_model)
+
+        '''SECTIONS'''
+        m.HomogeneousSolidSection(material='NH-1', name='Section-1', thickness=None)
+        m.HomogeneousSolidSection(material='NH-cap', name='Section-cap', thickness=None)
+
+        p_merged.SectionAssignment(offset=0.0, offsetField='', offsetType=MIDDLE_SURFACE, region=set_body, sectionName='Section-1', thicknessAssignment=FROM_SECTION)
+        p_merged.SectionAssignment(offset=0.0, offsetField='', offsetType=MIDDLE_SURFACE, region=set_cap, sectionName='Section-cap', thicknessAssignment=FROM_SECTION)
+
+        '''Mesh'''
+        #todo: partition here code is in current jnl
+        self.mesh_part(face_ring = f_ring, cell_cap = c_cap, cell_body = c_body)
+
+        '''ref pts'''
+        rp1 = a.ReferencePoint(point=(0.0, 0.0, 0.0))
+        rp2 = a.ReferencePoint(point=(0.0, 0.0, 0.5*H))
+        rp3 = a.ReferencePoint(point=(0.0, 0.0, H))
+        set_rp1 = a.Set(name='rp1', referencePoints=(a.referencePoints[rp1.id], ))
+        set_rp2 = a.Set(name='rp2', referencePoints=(a.referencePoints[rp2.id], ))
+        set_rp3 = a.Set(name='rp3', referencePoints=(a.referencePoints[rp3.id], ))
+
+        '''centernodes set'''
+        #todo:
+        centernodes_all = p_merged.nodes.getByBoundingCylinder(center1 = (0, 0, 0.5*H - 0.9*h_element), center2 = (0, 0, 0.5*H + 0.1*h_element), radius = R + t1 + h_element)
+        centernodes_inner = p_merged.nodes.getByBoundingCylinder(center1 = (0, 0, 0.5*H - 0.9*h_element), center2 = (0, 0, 0.5*H + 0.1*h_element), radius = R + 0.75*t1)
+        centernodes_outer = [node for i, node in enumerate(centernodes_all) if node not in centernodes_inner]
+
+        p_merged.Set(name = 'centernodes', nodes = MeshNodeArray(centernodes_outer))
+
+        '''FLUID-CAVITY INTERACTION'''
+        f_inner = p_merged.faces.getByBoundingCylinder(center1 = (0,0,0 - h_element), center2 = (0,0,H + w/8), radius = R + t1/2)
+        surfs = [a.Surface(name='Surf-' + str(i+1), side2Faces=i_all.faces[f.index:f.index+1]) for i,f in enumerate(f_inner)]
+        surf_inner = a.SurfaceByBoolean(name='Surf-main', surfaces=(surfs))
+
+        self.make_fluid_cavity_interaction(surf_inner)
