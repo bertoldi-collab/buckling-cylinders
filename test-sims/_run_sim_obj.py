@@ -6,15 +6,16 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-# idx_try = 118
-idx_try = 207
+idx_try = 208
+# idx_try = 207
 bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
-# test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
-test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four)
-test.post_process_pv()
+test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
+test.num_elem_thickness = 3
+# test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four)
+# test.post_process_pv()
 
-# test.make_linear_model()
+test.make_linear_model()
 # test.run_linear_model()
 # jname = test.make_nonlin_model(bdamp, temp_set = -0.332*0.3, extra_imper = [(2,0.001), (3,0.002)])
 
@@ -51,3 +52,4 @@ test.post_process_pv()
 #205 is more 3d testing
 #206: 3d 3folds
 #207: 3d 2folds
+#208: 3d testing partition on ring face (2folds)

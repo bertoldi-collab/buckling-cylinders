@@ -2,7 +2,7 @@ import sys
 
 sys.path.append('../')
 
-from buck_cylinder_obj import *
+from cylinder_obj import *
 from geo_prop import *
 
 idx_try = 500
@@ -11,8 +11,8 @@ proj_name = '4fold-fitting-'
 
 
 #v500+ trial
-E_try = [0.795]
-t_try = [0.46, 0.48, 0.5, 0.52, 0.54, 0.56, 0.58, 0.6]
+E_try = [1.1, 1.2, 1.3, 1.4]
+t_try = [0.50, 0.52, 0.54, 0.56, 0.58, 0.6]
 
 
 for i in range(len(E_try)):
@@ -23,7 +23,6 @@ for i in range(len(E_try)):
         geo_prop_cur = geoProps(10, 18, 5, t_cur, E_cur)
 
         test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur, imperfection = 0.002)
-        test.transverse_shear = True
         jname_lin = test.run_linear_model()
 
         jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.5*-0.332)
