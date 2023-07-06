@@ -401,7 +401,7 @@ class cylinder_model(object):
         '''CONTACT'''
         contact_prop = m.ContactProperty('IntProp-2')
         contact_prop.NormalBehavior(allowSeparation=ON, constraintEnforcementMethod=DEFAULT, pressureOverclosure=HARD)
-        contact_prop.TangentialBehavior(formulation=ROUGH)
+        # contact_prop.TangentialBehavior(formulation=ROUGH)
 
         int_contact = m.ContactStd(createStepName='Initial', name='Int-2')
         int_contact.includedPairs.setValuesInStep(stepName='Initial', useAllstar=ON)
