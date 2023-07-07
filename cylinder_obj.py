@@ -687,9 +687,6 @@ class cylinder_model(object):
         freq = np.arange(int(disp_r.size/2) + 1)
         val = freq[np.argmax(np.abs(fft_disp_r))]
 
-        #todo: not giving the right mode, check python 3 version w/ current disp_r
-        # printAB(phase_all)
-        # printAB(fft_disp_r)
         return val
 
     def post_process_centernodes(self):
@@ -712,28 +709,40 @@ class cylinder_model(object):
 
         #make data for x,y,z where a col is a timestep
         x_all, y_all, z_all = [np.zeros((num_nodes,num_frames)) for _ in range(3)]
+        phase_all = np.zeros(num_nodes)
+
+        center_nodes = odb.rootAssembly.instances[i_name].nodeSets['CENTERNODES']
 
         for cc,frame in enumerate(odb.steps['Step-1'].frames):
             time_all[cc] = frame.frameValue
             fieldU = frame.fieldOutputs['COORD']
             
-            ndFieldU = fieldU.getSubset(region=odb.rootAssembly.instances[i_name].nodeSets['CENTERNODES'],
-                position=NODAL)
+            ndFieldU = fieldU.getSubset(region=odb.rootAssembly.instances[i_name].nodeSets['CENTERNODES'], position=NODAL)
             #below gives you the [x,y,z] coord of the 0th point
             #printAB(ndFieldU.values[0].data)
             for i,value in enumerate(ndFieldU.values):
+                if cc == 0:
+                    x_init, y_init = np.asarray(center_nodes.nodes[i].coordinates)[:2]
+                    tan_temp = np.arctan2(y_init, x_init)
+                    if tan_temp < 0:
+                        phase_all[i] = tan_temp + 2*np.pi
+                    else:
+                        phase_all[i] = tan_temp
+
                 current_coord = value.data
                 x_all[i,cc] = current_coord[0]
                 y_all[i,cc] = current_coord[1]
                 z_all[i,cc] = current_coord[2]
 
         odb.close()
-        np.savetxt("../data_out/" + self.project + "_x_all.txt",x_all)
-        np.savetxt("../data_out/" + self.project + "_y_all.txt",y_all)
-        np.savetxt("../data_out/" + self.project + "_z_all.txt",z_all)
+        resort_idx = np.argsort(phase_all)
+
+        np.savetxt("../data_out/" + self.project + "_x_all.txt",x_all[resort_idx,:])
+        np.savetxt("../data_out/" + self.project + "_y_all.txt",y_all[resort_idx,:])
+        np.savetxt("../data_out/" + self.project + "_z_all.txt",z_all[resort_idx,:])
         np.savetxt("../data_out/" + self.project + "_t_all.txt",time_all)
         
-        print('Post-processing UC is done. File saved.')
+        printAB('Post-processing centernodes done')
 
     def add_materials(self, nonlinear_model = False):
         m = self.model
