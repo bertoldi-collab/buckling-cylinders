@@ -37,6 +37,10 @@ for i in range(len(E_try)):
 
         idx_try += 1
 
+#some nonsense for outputting
+# proj_name = '4fold-fitting-554'
+# test = full_shell(proj_name, imperfection = 0.001, simpProps = geo_prop_four)
+# test.post_process_centernodes()
 
 #v100+ trial
 # E_try = [1.0, 1.1, 1.15, 1.2, 1.25, 1.3]

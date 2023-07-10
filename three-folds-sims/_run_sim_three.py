@@ -33,6 +33,10 @@ for i in range(len(E_try)):
 
         idx_try += 1
 
+#some nonsense for outputting
+# proj_name = '3fold-fitting-666'
+# test = full_shell(proj_name, imperfection = 0.001, simpProps = geo_prop_three)
+# test.post_process_centernodes()
 
 #v100+ trial
 # E_try = [0.9, 0.95, 1.0, 1.05, 1.1]

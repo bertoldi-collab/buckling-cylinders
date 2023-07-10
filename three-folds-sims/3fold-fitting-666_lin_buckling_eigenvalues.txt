@@ -1,0 +1,6 @@
+Increment      0: Base State
+Mode         1: EigenValue =  5.58340E-04
+Mode         2: EigenValue =  5.58352E-04
+Mode         3: EigenValue =  6.07625E-04
+Mode         4: EigenValue =  6.07647E-04
+Mode         5: EigenValue =  7.41410E-04
