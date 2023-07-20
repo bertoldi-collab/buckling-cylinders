@@ -4,10 +4,15 @@ import numpy as np
 geoProps = namedtuple('geoProps',['R','H','w','t','E'])
 geoPropsFull = namedtuple('geoPropsFull',['R', 'H', 'w', 't1', 't2','E1', 'E2', 'E_cap', 'theta'])
 
-geo_prop_four = geoProps(10, 18, 5, 0.56, 1.4)
-geo_prop_two = geoProps(8.8, 44.75, 5, 1.2, 1.4)
-geo_prop_three = geoProps(10, 27, 5, 0.58, 1.4)
-geo_prop_bend = geoPropsFull(10, 18, 5, 0.75, 0.25, 1.4, 1.4, 1.4, 3*np.pi/2)
+geo_prop_four = geoProps(10, 18, 5, 0.54, 1.2)
+geo_prop_two = geoProps(8.8, 44.75, 5, 1.2, 1.2)
+geo_prop_three = geoProps(10, 27, 5, 0.54, 1.2)
+
+#old props from pre fixing RP days
+# geo_prop_four = geoProps(10, 18, 5, 0.56, 1.4)
+# geo_prop_two = geoProps(8.8, 44.75, 5, 1.2, 1.4)
+# geo_prop_three = geoProps(10, 27, 5, 0.58, 1.4)
+# geo_prop_bend = geoPropsFull(10, 18, 5, 0.75, 0.25, 1.4, 1.4, 1.4, 3*np.pi/2)
 
 
 geo_prop_four_old = geoProps(10, 18, 5, 0.54, 1.0)
