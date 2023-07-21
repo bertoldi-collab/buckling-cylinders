@@ -2,14 +2,14 @@ import sys
 
 sys.path.append('../')
 
-from buck_cylinder_obj import *
+from cylinder_obj import *
 from geo_prop import *
 from time import time
 
-idx_try = 670
+idx_try = 910
 bdamp = 0.0001
 
-num_folds = 3
+num_folds = 4
 # proj_name = '2fold-test_nu-'
 proj_name = str(num_folds) + 'fold-test_nu-'
 # proj_name = 'bender-test_nu-'
@@ -24,30 +24,17 @@ else: raise ValueError('yo')
 # E_try = [1.0]
 # t_try = [0.5]
 
-# nu_try = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
-nu_try = [0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49]
-# time_all = [0, 0, 0]
+nu_try = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+# nu_try = [0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49]
 
-# for i in range(len(nu_try)):
-#     test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_three, imperfection = 0.004)
-#     test.nu_shell = nu_try[i]
-#     jname_lin = test.run_linear_model()
-#     jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.7*-0.332, eig_idx = 3)
-#     run_inp(jname_nonlin,4)
-
-#     test.post_process_pv()
-
-#     delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.odb'])
-#     delete_extra_files(jname_nonlin)
-
-#     idx_try += 1
 
 for i, nu in enumerate(nu_try):
-    test = full_shell(project = proj_name+str(idx_try), simpProps = props_use, imperfection = 0.1)
+    test = full_shell(project = proj_name+str(idx_try), simpProps = props_use, imperfection = 0.05)
     # test = full_shell(project = proj_name+str(idx_try), fullProps = geo_prop_bend, imperfection = 0.05)
     test.nu_shell = nu
+    # test.static_stable = False
     jname_lin = test.run_linear_model()
-    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50, eig_idx = 3)
+    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50)
 
     run_inp(jname_multi)
 
@@ -58,6 +45,17 @@ for i, nu in enumerate(nu_try):
 
     idx_try += 1
 
+#NEW RP
+#700s series: 2 folds up to 0.45, 50 steps, static_stable = False
+#710s series: 4 folds up to 0.45, 50 steps, static_stable = True [to run]
+
+#800s series: 3 folds up to 0.45, 50 steps, eig_idx set manually, static_stable = False
+#810s series: 4 folds up to 0.45, 50 steps, static_stable = True [to run]
+
+#900s series: 4 folds up to 0.45, 50 steps, static_stable = False
+#910s series: 4 folds up to 0.45, 50 steps, static_stable = True
+
+#OLD RP
 #100s series: multi up to 0.245
 #200s series: multi up to 0.26
 #210s series: multi up to 0.28
@@ -87,4 +85,17 @@ for i, nu in enumerate(nu_try):
 
 
 
+#measuring pressure as a fxn of nu:
+# for i in range(len(nu_try)):
+#     test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_three, imperfection = 0.004)
+#     test.nu_shell = nu_try[i]
+#     jname_lin = test.run_linear_model()
+#     jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.7*-0.332, eig_idx = 3)
+#     run_inp(jname_nonlin,4)
 
+#     test.post_process_pv()
+
+#     delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.odb'])
+#     delete_extra_files(jname_nonlin)
+
+#     idx_try += 1

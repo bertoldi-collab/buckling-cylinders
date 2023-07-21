@@ -2,7 +2,7 @@ import sys
 
 sys.path.append('../')
 
-from buck_cylinder_obj import *
+from cylinder_obj import *
 from geo_prop import *
 
 idx_try = 300
