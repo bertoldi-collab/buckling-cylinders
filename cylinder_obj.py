@@ -565,7 +565,7 @@ class cylinder_model(object):
             # printAB(step)
             # printAB('***')
             # printAB(step_prev.historyRegions)
-            his_region_prev = step_prev.historyRegions['Node ASSEMBLY.2']
+            his_region_prev = step_prev.historyRegions['Node ASSEMBLY.1']
             # printAB(his_region_prev.historyOutputs)
             # printAB('***')
             his_name = step.historyRegions.keys()[0]
