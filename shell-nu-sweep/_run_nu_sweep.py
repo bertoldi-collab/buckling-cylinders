@@ -6,10 +6,10 @@ from cylinder_obj import *
 from geo_prop import *
 from time import time
 
-idx_try = 910
+idx_try = 710
 bdamp = 0.0001
 
-num_folds = 4
+num_folds = 2
 # proj_name = '2fold-test_nu-'
 proj_name = str(num_folds) + 'fold-test_nu-'
 # proj_name = 'bender-test_nu-'
@@ -47,10 +47,10 @@ for i, nu in enumerate(nu_try):
 
 #NEW RP
 #700s series: 2 folds up to 0.45, 50 steps, static_stable = False
-#710s series: 4 folds up to 0.45, 50 steps, static_stable = True [to run]
+#710s series: 4 folds up to 0.45, 50 steps, static_stable = True
 
 #800s series: 3 folds up to 0.45, 50 steps, eig_idx set manually, static_stable = False
-#810s series: 4 folds up to 0.45, 50 steps, static_stable = True [to run]
+#810s series: 4 folds up to 0.45, 50 steps, static_stable = True
 
 #900s series: 4 folds up to 0.45, 50 steps, static_stable = False
 #910s series: 4 folds up to 0.45, 50 steps, static_stable = True
