@@ -6,19 +6,23 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 208
+idx_try = 210
 # idx_try = 207
 bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
-test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
-test.num_elem_thickness = 3
-# test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four)
+# test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
+# test.num_elem_thickness = 3
+test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four)
 # test.post_process_pv()
 
-test.make_linear_model()
-# test.run_linear_model()
+# test.make_linear_model()
+jname_lin = test.run_linear_model()
+jname_riks = test.make_riks_model(bdamp, pressure_set = -2)
+run_inp(jname_riks, num_threads = 2)
 # jname = test.make_nonlin_model(bdamp, temp_set = -0.332*0.3, extra_imper = [(2,0.001), (3,0.002)])
 
+delete_extra_files(jname_lin)
+delete_extra_files(jname_riks)
 
 # run_inp(jname)
 # test.post_process_twist()
@@ -53,3 +57,4 @@ test.make_linear_model()
 #206: 3d 3folds
 #207: 3d 2folds
 #208: 3d testing partition on ring face (2folds)
+#209/210: riks testing (not working I think)

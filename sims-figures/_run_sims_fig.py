@@ -5,7 +5,7 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-num_folds = 2
+num_folds = 3
 if num_folds == 2: geo_props_use = geo_prop_two
 elif num_folds == 3: geo_props_use = geo_prop_three
 elif num_folds == 4: geo_props_use = geo_prop_four
@@ -14,7 +14,7 @@ else: raise ValueError('yo')
 # sim_type = '2folds'
 sim_type = str(num_folds)+'folds'
 
-version = 114
+version = 201
 
 final_temp_mult = 0.75
 bdamp = 0.001
@@ -22,26 +22,32 @@ bdamp = 0.001
 
 proj_name = 'sim-long-' + sim_type + '-' + str(version)
 
-test = full_shell(project = proj_name, simpProps = geo_props_use, imperfection = 0.001)
+test = full_shell(project = proj_name, simpProps = geo_props_use, imperfection = 0.002)
 # test.static_stable = False
 
 # test.h_element = elem_size_mult * test.h_element
-# jname_lin = test.run_linear_model()
+jname_lin = test.run_linear_model()
 # jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.55, num_steps = 50)
-# jname_nonlin = test.make_nonlin_model(bdamp, temp_set = final_temp_mult*-0.332)
-# run_inp(jname_nonlin,6)
+jname_nonlin = test.make_nonlin_model(bdamp, temp_set = final_temp_mult*-0.332)
+run_inp(jname_nonlin,6)
 # run_inp(jname_multi)
 # test.post_process_multi_buckle()
 
 test.post_process_pv()
-# test.post_process_contraction_twist()
-# delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log'])
+test.post_process_contraction_twist()
+test.post_process_centernodes()
+delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log'])
 # delete_extra_files(jname_multi)
-# delete_extra_files(jname_nonlin)
+delete_extra_files(jname_nonlin)
 
 # num_folds = test.post_process_num_folds()
 # printAB(num_folds)
 
+#new rp
+#v200: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
+#v201: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
+
+#OLD RP
 #FOUR FOLDS
 #v100: ran normal, failed at 0.777: looks like we got local hourglassing that caused the sample to bend
 #v101: trying 0.75*mesh size
