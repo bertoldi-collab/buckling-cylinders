@@ -195,14 +195,7 @@ class cylinder_model(object):
 
         return jname
 
-    def make_riks_model(self,bdamp, temp_mult = None):
-        #makes dynamic implicit by default, if is_buckling is true makes a static followed by buckle step
-        if temp_mult is not None:
-            if temp_mult <= 1 and temp_mult >= 0:
-                self.temp_set = -0.332 * temp_mult
-            else:
-                raise ValueError("temp mult is out of bounds!")
-
+    def make_riks_model(self, bdamp, pressure_set):
         eig_name = '_lin_buckling'
         extra_str = '_riks_buckling'
 
@@ -210,7 +203,7 @@ class cylinder_model(object):
         self.make_geometry(nonlinear_model = True)
         eig_idx = self.get_eig_idx(eig_name = eig_name)
         self.finish_nonlinear_initial()
-        self.finish_nonlinear_riks()
+        self.finish_nonlinear_riks(pressure_set)
         self.add_imperfection(eig_idx, eig_name = eig_name)
 
         
@@ -261,6 +254,10 @@ class cylinder_model(object):
         self.make_geometry()
         jname = self.finish_linear_buckle()
         return jname
+
+    def make_force_buckling_model(self, bdamp, temp_mult, pressure_app, eig_idx = None):
+        self.make_geometry(nonlinear_model = True)
+        self.make_nonlin_model(bdamp, temp_set = -0.332*temp_mult, eig_idx = eig_idx)
 
     def save_cae_write_job(self, extra_str):
         jname = self.make_job(extra_str)
@@ -421,12 +418,9 @@ class cylinder_model(object):
         m.Temperature(createStepName='Initial', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
             distributionType=UNIFORM, magnitudes=(0.0, ), name='Predefined Field-1', region=fluid_rp)
 
-    def finish_nonlinear_riks(self):
+    def finish_nonlinear_riks(self, pressure_set):
         m = self.model
-        # a = self.aa
-
         fluid_rp = self.aa.sets['rp1']
-
         nincre = 5000
         nincre_output = 200 #used to be 5000
 
@@ -441,11 +435,15 @@ class cylinder_model(object):
         # m.fieldOutputRequests['F-Output-1'].setValues(numIntervals=nincre_output,
         #     variables=('S', 'PE', 'PEEQ', 'PEMAG', 'LE', 'U','RF', 'CF', 'CSTRESS', 'CDISP', 'COORD'))
 
-        #temp bd condition
-        m.Temperature(amplitude='Amp-1', createStepName='Step-1', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
-        distributionType=UNIFORM, magnitudes=(self.temp_set, ), name='Predefined Field-2', region=set_rp1)
+        #pressure bd condition
+        m.FluidCavityPressureBC(amplitude=UNSET, createStepName=
+            'Step-1', fixed=OFF, fluidCavity='Int-1', magnitude=pressure_set, name='BC-2')
+        # m.HistoryOutputRequest(createStepName='Step-1', name='H-Output-1-cavity', rebar=EXCLUDE, region=
+        #     mdb.models['Model-1'].rootAssembly.sets['rp1'], sectionPoints=DEFAULT, variables=('PCAV', 'CVOL'))
+        m.HistoryOutputRequest(createStepName='Step-1', name='H-Output-1-cavity', rebar=EXCLUDE, 
+            region=fluid_rp, sectionPoints=DEFAULT, variables=('PCAV', 'CVOL'))
 
-    def finish_nonlinear_steps(self, make_dyn = False, make_riks = False, temp_list = None):
+    def finish_nonlinear_steps(self, make_dyn = False, temp_list = None):
         '''
         finishes adding steps to a post buckling analysis
         * default behavior is to make 1 static and 1 buckle step
@@ -804,6 +802,8 @@ class cylinder_model(object):
         self.model.FluidCavity(cavityPoint=self.aa.sets['rp1'], cavitySurface=surf_inner,
             createStepName='Initial', interactionProperty='IntProp-1', name='Int-1')
 
+    def make_geometry(self, nonlinear_model = False):
+        pass
 
 
 
