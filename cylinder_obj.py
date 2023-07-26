@@ -211,24 +211,36 @@ class cylinder_model(object):
         jname = self.save_cae_write_job(extra_str)
         return jname
 
-    def make_nonlin_model(self, bdamp, is_buckling = False, temp_set = None, eig_idx = None, eig_name = '_lin_buckling',  extra_imper = None, alt_name = None):
+    def make_nonlin_model(self, bdamp, is_buckling = False, temp_set = None, temp_mult = None, eig_idx = None, eig_name = '_lin_buckling',  extra_imper = None, alt_name = None):
         '''
         makes a general nonlinear model w/ some imperfection from a previous simulation
         * bdamp: damping value
         * is_buckling: default false- does a dyn imp step; if set to true then does a single [static, freq] step
         * temp_set: default None, allows setting final temp manually
+        * temp_mult: default None, allows setting multiplier of final temp manually. Only provide one of {temp_mult, temp_set}
         * eig_idx: default None, allows setting index to pull impefection mode from eig_name manually
         * eig_name: default '_lin_buckling', defines fil file to pull buckling mode from
         * extra_imper: should be a list of tuples (eig_idx, imperfection)
         * alt_name: default '_post_buckling', defines name of job file
         '''
 
+        if temp_set is not None and temp_mult is not None:
+            raise ValueError("pls pick one of temp_mult and temp_set thx")
+
+        if temp_mult is not None:
+            if temp_mult <= 1. and temp_mult >= 0:
+                self.temp_set = -0.332*temp_mult
+            else:
+                raise ValueError("temp mult is out of bounds!")
+        
         if temp_set is not None:
             if temp_set >= -0.332 and temp_set <= 0:
                 self.temp_set = temp_set
             else:
                 raise ValueError("temp set is out of bounds!")
+        else: temp_set = self.temp_set
 
+        
         if alt_name is not None:
             extra_str = alt_name
             self.post_process_lin_buckle(eig_name = eig_name)
@@ -241,7 +253,7 @@ class cylinder_model(object):
         self.bdamp = bdamp
         self.make_geometry(nonlinear_model = True)
         self.finish_nonlinear_initial()
-        self.finish_nonlinear_steps(make_dyn = not is_buckling)
+        self.finish_nonlinear_steps(make_dyn = not is_buckling, temp_list = [temp_set])
         idx_keyword = self.add_imperfection(eig_idx, eig_name = eig_name)
 
         if extra_imper is not None:
@@ -256,8 +268,21 @@ class cylinder_model(object):
         return jname
 
     def make_force_buckling_model(self, bdamp, temp_mult, pressure_app, eig_idx = None):
+        eig_name = '_lin_buckling'
+        temp_set = -0.332 * temp_mult
+        self.bdamp = bdamp
         self.make_geometry(nonlinear_model = True)
-        self.make_nonlin_model(bdamp, temp_set = -0.332*temp_mult, eig_idx = eig_idx)
+        self.finish_nonlinear_initial()
+        self.finish_nonlinear_steps(make_dyn = True, temp_list = [temp_set])
+
+        if eig_idx is None:
+            eig_idx = self.get_eig_idx(eig_name = eig_name)
+        
+        self.add_second_step_force(pressure_app, temp_hold = temp_set)
+        self.add_imperfection(eig_idx, eig_name = eig_name)
+
+        jname = self.save_cae_write_job('_pressure_buckling')
+        return jname
 
     def save_cae_write_job(self, extra_str):
         jname = self.make_job(extra_str)
@@ -345,19 +370,17 @@ class cylinder_model(object):
 
     def add_imperfection(self, eig_idx, eig_name):
         m = self.model
-        imper = self.imperfection
+        # imper = self.imperfection
 
-        if eig_name is not '_lin_buckling':
-            step_num = 2
-        else:
-            step_num = 1
+        if eig_name is not '_lin_buckling': step_num = 2
+        else: step_num = 1
 
         '''WRITE IMPERFECTION'''
         m.keywordBlock.synchVersions(storeNodesAndElements=False)
         keyWords = m.keywordBlock.sieBlocks
         # printAB(keyWords)
-        imperfection_line = '*IMPERFECTION,FILE='+self.project+eig_name+',STEP='+str(step_num)
-        imperfection_val = str(eig_idx)+','+str(imper)
+        imperfection_line = '*IMPERFECTION,FILE=' + self.project + eig_name + ',STEP=' + str(step_num)
+        imperfection_val = str(eig_idx) + ',' + str(self.imperfection)
         split_on = '\n'
         for i,key in enumerate(keyWords):
             if key.startswith('*Step, name=Step-1'):
@@ -390,9 +413,9 @@ class cylinder_model(object):
     def finish_nonlinear_initial(self):
         #missing: steps, requests, temp_set bcs
         m = self.model
-        a = self.aa
+        # a = self.aa
 
-        fluid_rp = a.sets['rp1']
+        fluid_rp = self.aa.sets['rp1']
 
 
         '''CONTACT'''
@@ -407,14 +430,13 @@ class cylinder_model(object):
 
         '''BCS'''
         m.DisplacementBC(amplitude=UNSET, createStepName='Initial',distributionType=UNIFORM, fieldName='',
-                fixed=OFF,localCsys=None, name='BC-ring', region=a.sets['Merged-1.ring'],
+                fixed=OFF,localCsys=None, name='BC-ring', region=self.aa.sets['Merged-1.ring'],
                 u1=SET, u2=SET, u3=SET, ur1=SET, ur2=SET, ur3=SET)
         # m.VelocityBC(amplitude=UNSET, createStepName='Initial',distributionType=UNIFORM, 
         #     fieldName='', localCsys=None, name='BC-2', region=a.sets['Merged-1.ring'],
         #     v1=0.0, v2=0.0, v3=0.0, vr1=0.0, vr2=0.0, vr3=0.0)
 
         '''TEMPERATURE FIELDS FOR VOLUME CHANGE'''
-        #self.temp_set was originally -0.332 for taking out full volume
         m.Temperature(createStepName='Initial', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
             distributionType=UNIFORM, magnitudes=(0.0, ), name='Predefined Field-1', region=fluid_rp)
 
@@ -448,7 +470,6 @@ class cylinder_model(object):
         finishes adding steps to a post buckling analysis
         * default behavior is to make 1 static and 1 buckle step
         * if make_dyn is True, then it makes a dynamic step
-        * if make_riks is True, then it makes a riks step
         * if temp_list is provided it makes a series of [static, buckle] steps
         '''
 
@@ -479,7 +500,7 @@ class cylinder_model(object):
 
             #temp bd condition
             m.Temperature(amplitude='Amp-1', createStepName='Step-1', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
-                distributionType=UNIFORM, magnitudes=(self.temp_set, ), name='Predefined Field-2', region=fluid_rp)
+                distributionType=UNIFORM, magnitudes=(temp_list[0], ), name='Predefined Field-2', region=fluid_rp)
         
         else:
             prev_step_name = 'Initial'
@@ -536,6 +557,31 @@ class cylinder_model(object):
         #field outputs
         m.fieldOutputRequests['F-Output-1'].setValues(numIntervals=nincre_output, timeMarks=OFF,
             variables=('S', 'PE', 'PEEQ', 'PEMAG', 'LE', 'U','RF', 'CF', 'CSTRESS', 'CDISP', 'COORD'))
+
+    def add_second_step_force(self, pressure_app, temp_hold):
+        m = self.model
+        fluid_rp = self.aa.sets['rp1']
+        nincre = 5000
+        nincre_output = 200
+        perc_error = 0.01
+        cap_face = self.aa.instances['Merged-1'].faces.getByBoundingCylinder(center1 = (0,0,self.H*(1 - perc_error)),
+            center2 = (0,0,self.H*(1 + perc_error)), radius = self.R * (1 + perc_error))
+
+        m.ImplicitDynamicsStep(alpha=DEFAULT, amplitude=RAMP, 
+            application=QUASI_STATIC, initialConditions=OFF, initialInc=0.001, maxInc=0.01,
+            maxNumInc=nincre, minInc=1e-09, name='Step-2', nlgeom=ON, nohaf=OFF, previous='Step-1')
+
+        #temp bd condition: holding at prev temp (temp generally? does not seem to actually hold in abaqus :///)
+        amp_hold_name = 'Amp-hold'
+        m.TabularAmplitude(data=((0.0, 1.0), (1.0, 1.0)), name=amp_hold_name, timeSpan=STEP)
+        m.Temperature(amplitude=amp_hold_name, createStepName='Step-2', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
+            distributionType=UNIFORM, magnitudes=(temp_hold, ), name='Predefined Field-3', region=fluid_rp)
+
+        #surface cap outside
+        surf_cap = self.aa.Surface(name='Surf-free-cap', side1Faces=cap_face)
+        m.Pressure(amplitude=UNSET, createStepName='Step-2', distributionType=UNIFORM, field='', magnitude=pressure_app, name='Load-1', region=surf_cap)        
+        
+
 
     def post_process_multi_buckle(self):
         #Import the relavent data
@@ -841,9 +887,9 @@ class full_shell(cylinder_model):
         p4.generateMesh()
 
     def edit_keywords_transverse_shear(self):
+        '''edit transverse shear lines in keywords bc of a bug (in abaqus/2019) crryyy'''
         m = self.model
 
-        '''edit transverse shear lines bc of a bug crryyy'''
         m.keywordBlock.synchVersions(storeNodesAndElements=False)
         keyWords = m.keywordBlock.sieBlocks
 
@@ -1028,7 +1074,6 @@ class full_shell(cylinder_model):
         bottom_center_node = np.argmin(bottom_norm)
         p4.Set(name='bottom_middle_node',nodes=(p4.sets['ring'].nodes[bottom_center_node:bottom_center_node+1], ))
         
-        #[todo] this is different for 3d
         p4.Set(name = 'centernodes', nodes = p4.nodes.getByBoundingCylinder(center1 = (0, 0, 0.5*H - 0.9*h_element),
             center2 = (0, 0, 0.5*H + 0.1*h_element), radius = R + h_element))
 
