@@ -36,7 +36,7 @@ for i in range(len(R_try)):
             num_folds = test.post_process_num_folds()
             num_folds_all[i,j,k] = num_folds
 
-            delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log', '.dat', '.msg'])
+            delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
             # delete_extra_files(jname_multi, ['.log', '.dat', '.msg'])
 
             idx_try += 1
