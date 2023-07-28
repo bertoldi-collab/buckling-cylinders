@@ -2,11 +2,11 @@ import sys
 
 sys.path.append('../')
 
-from buck_cylinder_obj import *
+from cylinder_obj import *
 from geo_prop import *
 from time import time
 
-idx_try = 210
+idx_try = 220
 bdamp = 0.0001
 
 num_folds = 3
@@ -25,10 +25,10 @@ damping_sweep = 2*np.logspace(-7, -4, num_samp)
 for i, stab_factor in enumerate(damping_sweep):
     test = full_shell(project = proj_name+str(idx_try), simpProps = props_use, imperfection = 0.05)
     test.stabilization_factor = stab_factor
-    test.nu_shell = 0.45
+    # test.nu_shell = 0.45
     # test = full_shell(project = proj_name+str(idx_try), fullProps = geo_prop_bend, imperfection = 0.05)
     jname_lin = test.run_linear_model()
-    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50)
+    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50, eig_idx = 3)
 
     run_inp(jname_multi)
 
@@ -38,6 +38,11 @@ for i, stab_factor in enumerate(damping_sweep):
     delete_extra_files(jname_multi)
 
     idx_try += 1
+
+#v110s: 2folds up to 0.45
+#v220s: 3folds up to 0.45 (eig_idx passed in)
+#v330s: 4folds up to 0.45
+
 
 #v100s: 2folds up to 0.55
 #v200s: 3folds up to 0.55 (eig_idx manually passed in as 3)
