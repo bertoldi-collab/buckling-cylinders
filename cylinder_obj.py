@@ -1,6 +1,6 @@
 '''
 ============================================================================
-Python function to simulate hyper-elastic cylinder under deflation
+Python class to simulate hyper-elastic cylinder under deflation
 NB: The units are N and mm (MPa).
 Authors: Helen Read, originally David Melancon, Antonio Elia Forte, & Ahmad Zareeeei
 Harvard University
@@ -12,75 +12,10 @@ Tested on Abaqus 2019
 
 '''
 ------------------------------------------------------------------------
-Import Python-related libraries
+Import abqus libraries, utility fxns, and numpy
 ------------------------------------------------------------------------
 '''
-import numpy as np
-from math import *
-#todo: find out if I comment out the math part what breaks
-
-'''
-------------------------------------------------------------------------
-Import Abaqus-related libraries
-------------------------------------------------------------------------
-'''
-from abaqus import *
-from odbAccess import *
-from part import *
-from material import *
-from section import *
-from assembly import *
-from step import *
-from interaction import *
-from load import *
-from mesh import *
-from optimization import *
-from job import *
-from sketch import *
-from visualization import *
-from connectorBehavior import *
-import time
-import os
-import sys
-
-#utility fxns
-def printAB(string_):
-    '''prints to the abaqus command line'''
-    print >> sys.__stdout__, string_
-
-def delete_extra_files(jname, additional_ext = None):
-    '''
-    deletes extra files:
-    * jname: job name to delete files from
-    * additional_ext: optional, pass a list of additional ext to remove jname.ext
-    '''
-    extra_file_extensions = ['.com', '.prt', '.sim', '.dmp', '.ipm', '.mdl', '.simlog', '.stt',
-        '.pac', '.cid', '.sel', '.res', '.023', '.SMAFocus']
-    if additional_ext is not None:
-        extra_file_extensions.extend(additional_ext)
-    for i in range(len(extra_file_extensions)):
-        if os.path.exists(jname + extra_file_extensions[i]):
-            os.remove(jname + extra_file_extensions[i])
-
-def run_inp(jname, num_threads = 4):
-    '''
-    runs abaqus job
-    * jname: runs jname.inp
-    * num_threads: default 4
-    '''
-    if os.path.exists(jname + '.inp'):
-        printAB("running " + jname)
-        j = mdb.JobFromInputFile(activateLoadBalancing=False, atTime=None,
-            explicitPrecision=DOUBLE_PLUS_PACK, inputFileName=jname,
-            memory=90, memoryUnits=PERCENTAGE, multiprocessingMode=DEFAULT, name=
-            jname, nodalOutputPrecision=SINGLE, numCpus=num_threads, numDomains=num_threads,
-            parallelizationMethodExplicit=DOMAIN, queue=None, resultsFormat=ODB,
-            scratch='', type=ANALYSIS, userSubroutine='', waitHours=0, waitMinutes=0)
-
-        j.submit(consistencyChecking = OFF)
-        j.waitForCompletion()
-        printAB("finished")
-
+from abaqus_utils import *
 
 #super class
 class cylinder_model(object):
@@ -581,8 +516,6 @@ class cylinder_model(object):
         surf_cap = self.aa.Surface(name='Surf-free-cap', side1Faces=cap_face)
         m.Pressure(amplitude=UNSET, createStepName='Step-2', distributionType=UNIFORM, field='', magnitude=pressure_app, name='Load-1', region=surf_cap)        
         
-
-
     def post_process_multi_buckle(self):
         #Import the relavent data
         project = self.project + '_multi_buckling'
@@ -1239,3 +1172,205 @@ class full_3d(cylinder_model):
         surf_inner = a.SurfaceByBoolean(name='Surf-main', surfaces=(surfs))
 
         self.make_fluid_cavity_interaction(surf_inner)
+
+
+class beam_model(cylinder_model):
+    def __init__(self, project, imperfection = None, fullProps = None, simpProps = None, beamProps = None):
+        super(full_shell, self).__init__(project, imperfection = imperfection, fullProps = fullProps, simpProps = simpProps)
+        #todo: this beam prop way to do it is probably not what I want to do?? bc I want a more generalized shape
+
+        #beam stuff
+        if beamProps is not None:
+            self.base = float(beamProps.base)
+            self.height = float(beamProps.height)
+    
+    def post_process_contraction_twist(self):
+        #todo: write this fxn
+        raise ValueError("write the fxn!!!")
+    
+    def make_geometry(self, nonlinear_model = False, extra_springs = False):
+        Mdb()
+        m = mdb.models['Model-1']
+        self.model = m
+
+        #discrete rigid top
+        s1 = m.ConstrainedSketch(name='sketch_circ', sheetSize=200.0)
+        s1.CircleByCenterPerimeter(center=(0.0, 0.0), point1=(self.R, 0.0))
+        p1 = m.Part(dimensionality=THREE_D, name='Part-cap', type=DISCRETE_RIGID_SURFACE)
+        p1.BaseSolidExtrude(depth=self.w, sketch=s1)
+        p1.RemoveCells(cellList=p1.cells)
+        #note: extrudes in pos z direction
+
+        #beam part
+        p2 = m.Part(dimensionality=THREE_D, name='Part-beam', type=DEFORMABLE_BODY)
+        yz_plane = p2.DatumPlaneByPrincipalPlane(offset=0.0, principalPlane=YZPLANE)
+        y_axis = p2.DatumAxisByPrincipalAxis(principalAxis=YAXIS)
+        transform_beam = p2.MakeSketchTransform(sketchPlane=p2.datums[yz_plane.id], sketchPlaneSide=SIDE1,
+            sketchUpEdge=p2.datums[y_axis.id], sketchOrientation=RIGHT, origin=(0.0, 0.0, 0.0))
+        s2 = m.ConstrainedSketch(name='sketch_beam', sheetSize=200.0, transform=transform_beam)
+        s2.Line(point1=(0.0, 0.0), point2=(self.H, 0.0))
+        
+        p2.Wire(sketch=s2, sketchOrientation=RIGHT, sketchPlane=p2.datums[yz_plane.id],
+            sketchPlaneSide=SIDE1, sketchUpEdge=p2.datums[y_axis.id])
+
+        if extra_springs:
+            p3 = m.Part(dimensionality=THREE_D, name='Part-spring', type=DEFORMABLE_BODY)
+            s3 = m.ConstrainedSketch(name='sketch_bar', sheetSize=200.0)
+            length_spring = self.R * np.sqrt(2) #only for 4 ridges obv
+            s3.Line(point1=(0.0, 0.0), point2=(length_spring, 0.0))
+            p3.BaseWire(sketch = s3)
+        
+
+        #assembly
+        aa = m.rootAssembly
+        self.aa = aa
+        aa.DatumCsysByDefault(CARTESIAN)
+        i_cap = aa.Instance(dependent=ON, name='Part-cap-1', part=p1)
+
+        aa.Instance(dependent=ON, name='Part-beam-1', part=p2)
+        aa.Instance(dependent=ON, name='Part-beam-2', part=p2)
+        aa.Instance(dependent=ON, name='Part-beam-3', part=p2)
+        aa.Instance(dependent=ON, name='Part-beam-4', part=p2)
+        
+        #part 1
+        aa.translate(instanceList=('Part-beam-1', ), vector=(0.0, self.R, 0.0))
+        aa.rotate(angle=90.0, axisDirection=(0.0, 0.0, -self.H), axisPoint=(0.0, self.R, 0.0),
+            instanceList=('Part-beam-1', ))
+        
+        #part 2
+        aa.translate(instanceList=('Part-beam-2', ), vector=(self.R, 0.0, 0.0))
+        # aa.rotate(angle=90.0, axisDirection=(0.0, 0.0, -self.H), axisPoint=(self.R, 0.0, 0.0),
+        #     instanceList=('Part-beam-2', ))
+
+        #part 3
+        aa.translate(instanceList=('Part-beam-3', ), vector=(0.0, -self.R, 0.0))
+        aa.rotate(angle=-90.0, axisDirection=(0.0, 0.0, -self.H), axisPoint=(0.0, -self.R, 0.0),
+            instanceList=('Part-beam-3', ))
+        
+        #part 4
+        aa.translate(instanceList=('Part-beam-4', ), vector=(-self.R, 0.0, 0.0))
+        aa.rotate(angle=180.0, axisDirection=(0.0, 0.0, -self.H), axisPoint=(-self.R, 0.0, 0.0),
+            instanceList=('Part-beam-4', ))
+
+        all_coord_top = [(0.0, self.R, 0.), (self.R, 0.0, 0.), (0.0, -self.R, 0.), (-self.R, 0.0, 0.)]
+
+        if extra_springs:
+            angle_rot = [45, 135, -135, -45]
+            for i in range(4):
+                idx = i + 1
+                aa.Instance(dependent = ON, name = 'Part-spring-' + str(idx), part = p3)
+                current_coord = (all_coord_top[i][0], all_coord_top[i][1], all_coord_top[i][2] - self.H/2)
+                aa.translate(instanceList = ('Part-spring-' + str(idx), ), vector = current_coord)
+                aa.rotate(angle = angle_rot[i], axisDirection = (0.0, 0.0, -self.H), axisPoint = current_coord,
+                    instanceList = ('Part-spring-' + str(idx), ))
+
+
+        #beam profile
+        m.RectangularProfile(a=self.base, b=self.height, name='Profile-1')
+
+        #material
+        rho = 1e-9
+        nu = 0.5
+        mu = self.E1/(2.*(1 + nu))
+        mat_nh = m.Material(name='Material-1')
+        mat_nh.Hyperelastic(materialType=
+            ISOTROPIC, table=((0.5*mu, 0.0), ), testData=OFF, type=NEO_HOOKE, 
+            volumetricResponse=VOLUMETRIC_DATA)
+        mat_nh.Density(table=((rho,),))
+
+        if nonlinear_model:
+            mat_nh.Damping(alpha = 0., beta = self.bdamp)
+
+
+        m.BeamSection(consistentMassMatrix=False, integration=DURING_ANALYSIS, material='Material-1',
+            name='Section-beam', poissonRatio=0.5, profile='Profile-1', temperatureVar=LINEAR)
+        set_beam = p2.Set(edges=p2.edges, name='Set-beam')
+        p2.assignBeamSectionOrientation(method=N1_COSINES, n1=(0.0, 1.0, 0.0), region=set_beam)
+        p2.SectionAssignment(offset=0.0, offsetField='', offsetType=MIDDLE_SURFACE, region=
+            set_beam, sectionName='Section-beam', thicknessAssignment=FROM_SECTION)
+
+        if extra_springs:
+            set_spring = p3.Set(edges = p3.edges, name = 'Set-spring')
+            area_spring = self.H * self.t1
+            m.TrussSection(area = area_spring, material = 'Material-1', name='Section-spring')
+            p3.SectionAssignment(offset=0.0, offsetField='', offsetType=MIDDLE_SURFACE, region=set_spring,
+            sectionName='Section-spring', thicknessAssignment=FROM_SECTION)
+
+        #ref pt
+        rp_cap = p1.ReferencePoint(point=(0.0, 0.0, self.w/2.))
+        set_rp = p1.Set(name='set-rp', referencePoints=(p1.referencePoints[rp_cap.id], ))
+        set_rp_inst = i_cap.sets['set-rp']
+        self.set_rp = set_rp_inst
+
+        #problems: regions for aa need to do reference that version of the set
+
+        rho = 1e-9
+        mass_cylinder = np.pi * self.R * self.R * self.w * rho
+        I_zz = 0.5 * mass_cylinder * self.R * self.R
+        I_xx = mass_cylinder * (0.25 * self.R * self.R + 1/3. * self.w * self.w)
+        aa.engineeringFeatures.PointMassInertia(alpha=0.0, composite=0.0, mass=mass_cylinder,
+            i11=I_xx, i12=0.0, i13=0.0, i22=I_xx, i23=0.0, i33=I_zz, name='Inertia-1', region=set_rp_inst)
+
+        #mesh
+        p1.seedPart(deviationFactor=0.1, minSizeFactor=0.1, size=2.8)
+        p1.generateMesh()
+
+        p2.setElementType(elemTypes=(ElemType(elemCode=B31H, elemLibrary=STANDARD), ), regions=set_beam)
+        p2.seedPart(deviationFactor=0.1, minSizeFactor=0.1, size=self.H/10.)
+        p2.generateMesh()
+
+        if extra_springs:
+            p3.seedPart(deviationFactor = 0.1, minSizeFactor = 0.1, size = self.R * np.sqrt(2))
+            p3.setElementType(elemTypes=(ElemType(elemCode=T3D2, elemLibrary=STANDARD), ), regions=set_spring)
+            p3.generateMesh()
+
+        
+        p2.Set(name = 'Set-center-node', nodes = p2.nodes.getByBoundingSphere(center = (0, 0, -self.H/2),
+            radius = self.H/20))
+
+        for i in range(4):
+            idx = i + 1
+            bar_1_idx = (i - 1) % 4 + 1
+            bar_2_idx = i + 1
+
+            set_name = 'Set-springs-node-' + str(idx)
+            current_coord = (all_coord_top[i][0], all_coord_top[i][1], all_coord_top[i][2] - self.H/2)
+            vertex_1 = aa.instances['Part-spring-' + str(bar_1_idx)].vertices.findAt(current_coord)
+            vertex_2 = aa.instances['Part-spring-' + str(bar_2_idx)].vertices.findAt(current_coord)
+
+
+            set_cur = aa.Set(name = set_name, vertices = VertexArray([vertex_1, vertex_2]))
+            set_master = aa.instances['Part-beam-' + str(idx)].sets['Set-center-node']
+
+            constraint_name = 'Constraint-spring-' + str(idx)
+            m.Tie(adjust=OFF, master=set_master, name=constraint_name, positionTolerance=self.H/20,
+                positionToleranceMethod=SPECIFIED, slave=set_cur, thickness=ON, tieRotations=ON)
+
+
+        aa.regenerate()
+
+        #BCs
+        vertex_all = []
+        vertex_all.append(aa.instances['Part-beam-1'].vertices.findAt((0.0, self.R, -self.H)))
+        vertex_all.append(aa.instances['Part-beam-2'].vertices.findAt((self.R, 0.0, -self.H)))
+        vertex_all.append(aa.instances['Part-beam-3'].vertices.findAt((0.0, -self.R, -self.H)))
+        vertex_all.append(aa.instances['Part-beam-4'].vertices.findAt((-self.R, 0.0, -self.H)))
+        vertex_all = VertexArray(vertex_all)
+
+        set_beam_end = aa.Set(name='Set-end', vertices=vertex_all)
+
+        
+
+        m.DisplacementBC(amplitude=UNSET, buckleCase=PERTURBATION_AND_BUCKLING, createStepName='Initial',
+            distributionType=UNIFORM, fieldName='', fixed=OFF, localCsys=None, name='BC-1', region=set_beam_end,
+            u1=SET, u2=SET, u3=SET, ur1=SET, ur2=SET, ur3=SET)
+        
+        for i in range(4):
+            idx = i + 1
+            instance_name = 'Part-beam-' + str(int(idx))
+            set_name = 's_Set-' + str(int(idx))
+            constraint_name = 'Constraint-' + str(int(idx))
+            vert_find = aa.instances[instance_name].vertices.findAt(all_coord_top[i])
+            set_cur = aa.Set(name=set_name, vertices=VertexArray([vert_find]))
+            m.Tie(adjust=OFF, master=set_rp_inst, name=constraint_name, positionTolerance=1.5 * self.R,
+                positionToleranceMethod=SPECIFIED, slave=set_cur, thickness=ON, tieRotations=ON)
