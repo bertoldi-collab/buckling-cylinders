@@ -74,6 +74,7 @@ class cylinder_model(object):
         self.mesh_order = 'lin' #pass in 'quadratic' for 2nd order
         self.static_stable = True
         self.stabilization_factor = 0.0002
+        self.tangential_contact = False
 
     def make_job(self,extra_str):
         '''
@@ -356,7 +357,9 @@ class cylinder_model(object):
         '''CONTACT'''
         contact_prop = m.ContactProperty('IntProp-2')
         contact_prop.NormalBehavior(allowSeparation=ON, constraintEnforcementMethod=DEFAULT, pressureOverclosure=HARD)
-        # contact_prop.TangentialBehavior(formulation=ROUGH)
+
+        if self.tangential_contact:
+            contact_prop.TangentialBehavior(formulation=ROUGH)
 
         int_contact = m.ContactStd(createStepName='Initial', name='Int-2')
         int_contact.includedPairs.setValuesInStep(stepName='Initial', useAllstar=ON)
