@@ -570,6 +570,48 @@ class cylinder_model(object):
         odb.close()
         np.savetxt("../data_out/" + self.project + "_eig_freq.txt",data_all)
         np.savetxt("../data_out/" + self.project + "_eig_val.txt",data_eig_val)
+    
+    def post_process_multi_pv(self):
+        #Import the relavent data
+        project = self.project + '_multi_buckling'
+        part_name = 'Merged'
+        # Post-processing
+        odb = openOdb(project + '.odb')
+
+        # printAB(odb.steps)
+        # printAB(len(odb.steps))
+        num_freq_steps = len(odb.steps)/2
+
+        data_all = np.empty((num_freq_steps, 11))
+        data_all[:] = np.nan
+
+        data_eig_val = np.empty((num_freq_steps, 11))
+        data_eig_val[:] = np.nan
+
+        cvol = []
+        pcav = []
+
+        for i in range(num_freq_steps):
+            idx = i + 1
+            prev_step_name = 'Step-' + str(idx)
+            step_prev = odb.steps[prev_step_name]
+
+            his_region_prev = step_prev.historyRegions['Node ASSEMBLY.1']
+
+            out_his_cvol = his_region_prev.historyOutputs['CVOL'].data
+            out_his_pcav = his_region_prev.historyOutputs['PCAV'].data
+
+            if out_his_cvol is not None:
+                cvol_step = [out_his_cvol[j][1] for j in range(len(out_his_cvol))]
+                pcav_step = [out_his_pcav[j][1] for j in range(len(out_his_pcav))]
+
+                cvol.extend(cvol_step)
+                pcav.extend(pcav_step)
+
+        cvol = np.asarray(cvol)
+        pcav = np.asarray(pcav)
+        data_all = np.array([cvol,pcav]).T
+        np.savetxt("../data_out/" + self.project + "_pcav_cvol.txt",data_all)
 
     def post_process_pv(self):
         # Import the relavent data
