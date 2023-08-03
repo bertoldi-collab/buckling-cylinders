@@ -6,10 +6,10 @@ from cylinder_obj import *
 from geo_prop import *
 from time import time
 
-idx_try = 220
+idx_try = 350
 bdamp = 0.0001
 
-num_folds = 3
+num_folds = 4
 proj_name = str(num_folds) + 'fold-test_static-stable-'
 # proj_name = 'bender-test_nu-'
 
@@ -19,8 +19,11 @@ elif num_folds == 4: props_use = geo_prop_four
 else: raise ValueError('yo')
 
 
+# num_samp = 5
+# damping_sweep = 2*np.logspace(-7, -4, num_samp)
+
 num_samp = 5
-damping_sweep = 2*np.logspace(-7, -4, num_samp)
+damping_sweep = 2*np.logspace(-10, -6, num_samp)
 
 for i, stab_factor in enumerate(damping_sweep):
     test = full_shell(project = proj_name+str(idx_try), simpProps = props_use, imperfection = 0.05)
@@ -28,20 +31,25 @@ for i, stab_factor in enumerate(damping_sweep):
     # test.nu_shell = 0.45
     # test = full_shell(project = proj_name+str(idx_try), fullProps = geo_prop_bend, imperfection = 0.05)
     jname_lin = test.run_linear_model()
-    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50, eig_idx = 3)
+    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.25, num_steps = 50)
 
     run_inp(jname_multi)
 
     test.post_process_multi_buckle()
+    test.post_process_multi_pv()
 
     delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.odb'])
     delete_extra_files(jname_multi)
 
     idx_try += 1
 
-#v110s: 2folds up to 0.45
-#v220s: 3folds up to 0.45 (eig_idx passed in)
-#v330s: 4folds up to 0.45
+#v110s: 2folds up to 0.45, damping_sweep = 2*np.logspace(-7, -4, 5)
+#v120s: 2folds up to 0.45, damping_sweep = 2*np.logspace(-10, -6, 5)
+#v220s: 3folds up to 0.45 (eig_idx passed in as 3), damping_sweep = 2*np.logspace(-7, -4, 5)
+#v230s: 3folds up to 0.45 (eig_idx passed in as 3), damping_sweep = 2*np.logspace(-10, -6, 5)
+#v330s: 4folds up to 0.45, damping_sweep = 2*np.logspace(-7, -4, 5)
+#v340s: 4folds up to 0.45, damping_sweep = 2*np.logspace(-10, -6, 5)
+#v350s: 4folds up to 0.25, damping_sweep = 2*np.logspace(-10, -6, 5)
 
 
 #v100s: 2folds up to 0.55
