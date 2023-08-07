@@ -132,6 +132,11 @@ class cylinder_model(object):
         return jname
 
     def make_riks_model(self, bdamp, pressure_set):
+        '''
+        makes a riks model; returns the job name
+        * bdamp: beta damping value (is this needed? I'm doing static)
+        * pressure_set: the amount of internal pressure to apply; riks is pressure and not volume controlled
+        '''
         eig_name = '_lin_buckling'
         extra_str = '_riks_buckling'
 
@@ -199,11 +204,21 @@ class cylinder_model(object):
         return jname
 
     def make_linear_model(self):
+        '''
+        makes a linear buckling model; returns job name
+        '''
         self.make_geometry()
         jname = self.finish_linear_buckle()
         return jname
 
     def make_force_buckling_model(self, bdamp, temp_mult, pressure_app, eig_idx = None):
+        '''
+        makes a 2-step model: in step 1 some % volume is removed, in step 2 pressure is applied to the free face
+        * bdamp: damping value
+        * temp_mult: between [0,1], how much \Delta V/V_0 to remove in Step-1
+        * pressure_app: how much pressure to apply in Step-2 [MPa]
+        * eig_idx: allows manually specifying the index to pull the imperfection mode from
+        '''
         eig_name = '_lin_buckling'
         temp_set = -0.332 * temp_mult
         self.bdamp = bdamp
@@ -226,6 +241,11 @@ class cylinder_model(object):
         return jname
 
     def post_process_lin_buckle(self, eig_name):
+        '''
+        post process the linear buckling step and write a file containing the eigenvalues.
+        Additionally, write the properties to a text file in the data_out folder
+        * eig_name: looks for file w/ name {self.project}{eig_name}.odb, uses 'Step-1-buckle' instead of 'Step-1' if not _lin_buckling
+        '''
         odb = openOdb(path=self.project + eig_name + '.odb')
         #todo: can I just grab the last step instead?
         if eig_name is not '_lin_buckling':
@@ -255,7 +275,7 @@ class cylinder_model(object):
         #     f2.write('\n')
         odb.close()
 
-        #f3: write parameters: changing this to write to data-out where it can be used
+        #f3: write parameters: changing this to write to data_out where it can be used
         # props_all = np.array([self.a, self.b, self.c, self.d, self.alpha_11, self.alpha_22, final_temp])
         props_all = np.array([self.H, self.R, self.t1, self.t2, self.theta, self.w, self.E1, self.E2, self.E_cap, self.h_element])
         np.savetxt("../data_out/" + self.project + '_props.txt', props_all)
@@ -266,9 +286,13 @@ class cylinder_model(object):
         # f3.close()
 
     def get_eig_idx(self, eig_name):
+        '''
+        finds first positive eigenvalue and returns the index (1-indexed)
+        * eig_name: looks for file w/ name {self.project}{eig_name}_eigenvalues.txt for eigenvalues
+        '''
         f = open(self.project + eig_name + '_eigenvalues.txt','r')
         lines = f.readlines()
-        #finds first positive eigenvalue and returns the index (1-indexed)
+        #
         eig_idx = 1
         for i in range(len(lines)-1):
             eig = float(lines[i+1].split()[-1])
@@ -879,6 +903,9 @@ class full_shell(cylinder_model):
                 m.keywordBlock.replace(i,split_on.join(split_key))
 
     def add_transverse_shear(self, section_list):
+        '''
+        adds transverse shear to shell elements with set values
+        '''
         #C10 = 0.13175330
         # K11 = 592
         # K12 = K11/1.2
@@ -891,6 +918,10 @@ class full_shell(cylinder_model):
             sec.TransverseShearShell(k11=K11, k12=K12, k22=K11)
       
     def make_geometry(self, nonlinear_model = False):
+        '''
+        Makes geometry; if nonlinear_model is passed in as true, adds damping as a material property
+        * NOTE: theta describes the total angle spanned by parts 1 and 2
+        '''
         try:
             os.remove(self.project+'.lck')
             os.remove(self.project+'.odb')
