@@ -35,18 +35,19 @@ for i, stab_factor in enumerate(damping_sweep):
     test.stabilization_factor = stab_factor
     # test.nu_shell = 0.45
     # test = full_shell(project = proj_name+str(idx_try), fullProps = geo_prop_bend, imperfection = 0.05)
-    jname_lin = test.run_linear_model()
-    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 400)
+    # jname_lin = test.run_linear_model()
+    # jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 400)
 
     # raise ValueError('hi')
 
-    run_inp(jname_multi)
+    # run_inp(jname_multi)
 
-    test.post_process_multi_buckle()
-    test.post_process_multi_pv()
+    # test.post_process_multi_buckle()
+    # test.post_process_multi_pv()
+    test.post_process_multi_contraction_twist()
 
-    delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.odb'])
-    delete_extra_files(jname_multi)
+    # delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.odb'])
+    # delete_extra_files(jname_multi)
 
     idx_try += 1
 
