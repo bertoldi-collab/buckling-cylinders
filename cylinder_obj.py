@@ -657,6 +657,57 @@ class cylinder_model(object):
         data_all = np.array([cvol,pcav]).T
         np.savetxt("../data_out/" + self.project + "_pcav_cvol.txt",data_all)
     
+    def post_process_multi_contraction_twist(self):
+        #Import the relavent data
+        project = self.project + '_multi_buckling'
+        printAB(project)
+        part_name = 'Merged'
+        i_name = part_name.upper() + '-1'
+        # Post-processing
+        odb = openOdb(project + '.odb')
+        top_nodes = odb.rootAssembly.instances[i_name].nodeSets['CAP_FACE']
+
+        # printAB(odb.steps)
+        # printAB(len(odb.steps))
+        num_freq_steps = len(odb.steps)/2
+
+        time_all = []
+        contraction = []
+        twist = []
+
+        cvol = []
+        pcav = []
+
+        for i in range(num_freq_steps):
+            idx = i + 1
+            prev_step_name = 'Step-' + str(idx)
+            step_prev = odb.steps[prev_step_name]
+
+            his_region_prev = step_prev.historyRegions['Node ASSEMBLY.1']
+
+            # out_his_cvol = his_region_prev.historyOutputs['CVOL'].data
+            # out_his_pcav = his_region_prev.historyOutputs['PCAV'].data
+
+            time_all.extend([frame.frameValue for frame in step_prev.frames])
+            num_frames = len(step_prev.frames)
+            twist_step, contraction_step = [np.zeros((num_frames)) for _ in range(2)]
+
+            #iterate through frames and get the mean u3 and ur3 for the cap face nodes
+            for cc,frame in enumerate(step_prev.frames):
+
+                field_top_U = frame.fieldOutputs['U'].getSubset(region = top_nodes, position = NODAL)
+                field_top_UR = frame.fieldOutputs['UR'].getSubset(region = top_nodes, position = NODAL)
+
+                contraction_step[cc] = (np.mean([value.data[2] for value in field_top_U.values]) + self.H)/self.H
+                twist_step[cc] = np.mean([value.data[2] for value in field_top_UR.values])
+                # printAB(frame)
+
+            twist.extend(twist_step)
+            contraction.extend(contraction_step)
+
+        data_all = np.array([time_all, contraction, twist]).T
+        np.savetxt("../data_out/" + self.project + "_contraction_twist.txt",data_all)
+    
     def post_process_contraction_twist(self):
         project = self.project + '_post_buckling'
         odb = openOdb(project + '.odb')
