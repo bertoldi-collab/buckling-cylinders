@@ -24,7 +24,7 @@ for i in range(len(E_try)):
 
         test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur, imperfection = 0.001)
         jname_lin = test.run_linear_model()
-        jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.6*-0.332)
+        jname_nonlin = test.make_nonlin_model(temp_set = 0.6*-0.332)
         run_inp(jname_nonlin,4)
 
         test.post_process_pv()

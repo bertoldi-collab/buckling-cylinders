@@ -23,7 +23,7 @@ test = full_3d(project = proj_name + str(idx_try), simpProps = props_use)
 
 # test.make_linear_model()
 jname_lin = test.run_linear_model()
-jname_nonlin = test.make_nonlin_model(bdamp, temp_set = -0.332*0.7)
+jname_nonlin = test.make_nonlin_model(temp_set = -0.332*0.7)
 run_inp(jname_nonlin)
 test.post_process_pv()
 

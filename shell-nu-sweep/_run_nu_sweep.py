@@ -34,7 +34,7 @@ for i, nu in enumerate(nu_try):
     test.nu_shell = nu
     # test.static_stable = False
     jname_lin = test.run_linear_model()
-    jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50)
+    jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.45, num_steps = 50)
 
     run_inp(jname_multi)
 

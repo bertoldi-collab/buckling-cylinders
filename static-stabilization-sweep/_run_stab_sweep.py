@@ -36,7 +36,7 @@ for i, stab_factor in enumerate(damping_sweep):
     # test.nu_shell = 0.45
     # test = full_shell(project = proj_name+str(idx_try), fullProps = geo_prop_bend, imperfection = 0.05)
     # jname_lin = test.run_linear_model()
-    # jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 400)
+    # jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.45, num_steps = 400)
 
     # raise ValueError('hi')
 

@@ -2,7 +2,7 @@ import sys
 
 sys.path.append('../')
 
-from buck_cylinder_obj import *
+from cylinder_obj import *
 from geo_prop import *
 from time import time
 
@@ -21,7 +21,7 @@ for i in range(len(w_try)):
     geo_prop_cur = geoProps(10, 18, w_try[i], 0.54, 1.0)
     test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur, imperfection = 0.001)
     test.run_linear_model()
-    jname_nonlin = test.make_nonlin_model(bdamp, temp_set = 0.5*-0.332)
+    jname_nonlin = test.make_nonlin_model(temp_set = 0.5*-0.332)
     run_inp(jname_nonlin,4)
 
     test.post_process_pv()

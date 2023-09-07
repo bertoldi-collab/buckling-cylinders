@@ -75,6 +75,8 @@ class cylinder_model(object):
         self.static_stable = True
         self.stabilization_factor = 0.0002
         self.tangential_contact = False
+        self.bdamp = 0.0001
+        self.adamp = 0.0
 
     def make_job(self,extra_str):
         '''
@@ -101,17 +103,15 @@ class cylinder_model(object):
         self.post_process_lin_buckle(eig_name = '_lin_buckling')
         return jname
 
-    def make_nonlin_multi_buckle(self, bdamp, max_temp_mult = 0.6, num_steps = 10, eig_idx = None, extra_imper = None):
+    def make_nonlin_multi_buckle(self, max_temp_mult = 0.6, num_steps = 10, eig_idx = None, extra_imper = None):
         '''
         makes a model with N [static, frequency] steps; returns the job name
-        * bdamp: beta damping value (is this needed? I'm doing static)
         * max_temp_mult: between [0,1], how much \Delta V/V_0 to remove
         * num_steps: the number of [static, freq] pairs
         * eig_idx: allows manually specifying the index to pull the imperfection mode from
         * extra_imper: should be a list of tuples (eig_idx, imperfection)
         '''
         eig_name = '_lin_buckling'
-        self.bdamp = bdamp
 
         max_temp = max_temp_mult * -0.332
         temp_all = np.linspace(0, max_temp, num_steps + 1)[1:]
@@ -131,16 +131,14 @@ class cylinder_model(object):
 
         return jname
 
-    def make_riks_model(self, bdamp, pressure_set):
+    def make_riks_model(self, pressure_set):
         '''
         makes a riks model; returns the job name
-        * bdamp: beta damping value (is this needed? I'm doing static)
         * pressure_set: the amount of internal pressure to apply; riks is pressure and not volume controlled
         '''
         eig_name = '_lin_buckling'
         extra_str = '_riks_buckling'
 
-        self.bdamp = bdamp
         self.make_geometry(nonlinear_model = True)
         eig_idx = self.get_eig_idx(eig_name = eig_name)
         self.finish_nonlinear_initial()
@@ -152,10 +150,9 @@ class cylinder_model(object):
         jname = self.save_cae_write_job(extra_str)
         return jname
 
-    def make_nonlin_model(self, bdamp, is_buckling = False, temp_set = None, temp_mult = None, eig_idx = None, eig_name = '_lin_buckling',  extra_imper = None, alt_name = None):
+    def make_nonlin_model(self, is_buckling = False, temp_set = None, temp_mult = None, eig_idx = None, eig_name = '_lin_buckling',  extra_imper = None, alt_name = None):
         '''
         makes a general nonlinear model w/ some imperfection from a previous simulation
-        * bdamp: damping value
         * is_buckling: default false- does a dyn imp step; if set to true then does a single [static, freq] step
         * temp_set: default None, allows setting final temp manually
         * temp_mult: default None, allows setting multiplier of final temp manually. Only provide one of {temp_mult, temp_set}
@@ -191,7 +188,6 @@ class cylinder_model(object):
         if eig_idx is None:
             eig_idx = self.get_eig_idx(eig_name = eig_name)
 
-        self.bdamp = bdamp
         self.make_geometry(nonlinear_model = True)
         self.finish_nonlinear_initial()
         self.finish_nonlinear_steps(make_dyn = not is_buckling, temp_list = [temp_set])
@@ -211,17 +207,15 @@ class cylinder_model(object):
         jname = self.finish_linear_buckle()
         return jname
 
-    def make_force_buckling_model(self, bdamp, temp_mult, pressure_app, eig_idx = None):
+    def make_force_buckling_model(self, temp_mult, pressure_app, eig_idx = None):
         '''
         makes a 2-step model: in step 1 some % volume is removed, in step 2 pressure is applied to the free face
-        * bdamp: damping value
         * temp_mult: between [0,1], how much \Delta V/V_0 to remove in Step-1
         * pressure_app: how much pressure to apply in Step-2 [MPa]
         * eig_idx: allows manually specifying the index to pull the imperfection mode from
         '''
         eig_name = '_lin_buckling'
         temp_set = -0.332 * temp_mult
-        self.bdamp = bdamp
         self.make_geometry(nonlinear_model = True)
         self.finish_nonlinear_initial()
         self.finish_nonlinear_steps(make_dyn = True, temp_list = [temp_set])
@@ -892,7 +886,7 @@ class cylinder_model(object):
 
         if nonlinear_model:
             for i in range(len(self.mat_all)):
-                self.mat_all[i].Damping(alpha=0., beta=self.bdamp)
+                self.mat_all[i].Damping(alpha=self.adamp, beta=self.bdamp)
 
     def make_fluid_cavity_interaction(self, surf_inner):
         self.model.FluidCavityProperty(bulkModulusTable=((2000.0, ), ), expansionTable=((1.0, ), ),

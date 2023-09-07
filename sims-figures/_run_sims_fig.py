@@ -31,7 +31,7 @@ test = full_shell(project = proj_name, simpProps = geo_props_use, imperfection =
 test.h_element = elem_size_mult * test.h_element
 jname_lin = test.run_linear_model()
 # jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.55, num_steps = 50)
-jname_nonlin = test.make_nonlin_model(bdamp, temp_set = final_temp_mult*-0.332)
+jname_nonlin = test.make_nonlin_model(temp_set = final_temp_mult*-0.332)
 run_inp(jname_nonlin)
 # # run_inp(jname_multi)
 # # test.post_process_multi_buckle()

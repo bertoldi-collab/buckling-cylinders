@@ -30,7 +30,7 @@ for i in range(len(R_try)):
 
             test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur, imperfection = 0.05)
             jname_lin = test.run_linear_model()
-            jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.45, num_steps = 50)
+            jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.45, num_steps = 50)
 
             run_inp(jname_multi)
             test.post_process_multi_buckle()

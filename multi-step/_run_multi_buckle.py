@@ -11,7 +11,7 @@ bdamp = 0.0001
 test = full_shell(project = '2fold-imperfection-'+str(idx_try), simpProps = geo_prop_two, imperfection = 0.0)
 test.run_linear_model()
 
-jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.0194, num_steps = 10)
+jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.0194, num_steps = 10)
 run_inp(jname_multi)
 test.post_process_multi_buckle()
 delete_extra_files(jname_multi)

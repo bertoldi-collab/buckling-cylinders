@@ -5,6 +5,10 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
+
+idx_try = 200
+
+
 idx_try = 100
 bdamp = 0.0001
 proj_name = 'bender-test-H-v'

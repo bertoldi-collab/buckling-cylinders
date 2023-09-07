@@ -17,11 +17,11 @@ test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = ge
 
 # test.make_linear_model()
 # jname_lin = test.run_linear_model()
-# jname_riks = test.make_riks_model(bdamp, pressure_set = -2)
+# jname_riks = test.make_riks_model(pressure_set = -2)
 # run_inp(jname_riks, num_threads = 2)
-jname_pressure = test.make_force_buckling_model(bdamp, temp_mult = 0.2, pressure_app = 0.1)
+jname_pressure = test.make_force_buckling_model(temp_mult = 0.2, pressure_app = 0.1)
 run_inp(jname_pressure)
-# jname = test.make_nonlin_model(bdamp, temp_set = -0.332*0.3, extra_imper = [(2,0.001), (3,0.002)])
+# jname = test.make_nonlin_model(temp_set = -0.332*0.3, extra_imper = [(2,0.001), (3,0.002)])
 
 delete_extra_files(jname_lin)
 delete_extra_files(jname_pressure)
@@ -29,10 +29,10 @@ delete_extra_files(jname_pressure)
 
 # run_inp(jname)
 # test.post_process_twist()
-# jname_post = test.make_nonlin_model(bdamp, is_buckling = True, temp_set = -0.08)
+# jname_post = test.make_nonlin_model(is_buckling = True, temp_set = -0.08)
 # run_inp(jname_post,4)
-# jname_post_2 = test.make_nonlin_model(bdamp, temp_set = -0.332, alt_name = '_post_alt_eig', eig_name = '_post_buckling')
-# jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.4)
+# jname_post_2 = test.make_nonlin_model(temp_set = -0.332, alt_name = '_post_alt_eig', eig_name = '_post_buckling')
+# jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.4)
 # run_inp(jname_multi)
 
 # run_inp(jname_nonlin,4)
