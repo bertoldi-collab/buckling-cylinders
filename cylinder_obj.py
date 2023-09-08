@@ -234,6 +234,10 @@ class cylinder_model(object):
         mdb.saveAs(self.project+extra_str)
         return jname
 
+    def regenerate_job(self, jname):
+        extra_str = jname.split(self.project)[1]
+        self.save_cae_write_job(extra_str)
+    
     def post_process_lin_buckle(self, eig_name):
         '''
         post process the linear buckling step and write a file containing the eigenvalues.
@@ -835,6 +839,11 @@ class cylinder_model(object):
         
         printAB('Post-processing centernodes done')
 
+    def add_cap_bc(self):
+        self.model.DisplacementBC(amplitude=UNSET, createStepName='Initial',distributionType=UNIFORM, fieldName='',
+            fixed=OFF,localCsys=None, name='BC-cap-test', region=self.aa.sets['Merged-1.cap_face'],
+            u1=UNSET, u2=UNSET, u3=UNSET, ur1=UNSET, ur2=UNSET, ur3=SET)
+    
     def add_materials(self, nonlinear_model = False):
         m = self.model
         #Given material properties

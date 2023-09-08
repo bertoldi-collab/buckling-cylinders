@@ -6,7 +6,7 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 211
+idx_try = 213
 # idx_try = 207
 bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
@@ -15,16 +15,25 @@ bdamp = 0.0001
 test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four)
 # test.post_process_pv()
 
+# jname_lin = test.run_linear_model()
+jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.4, num_steps = 100)
+test.add_cap_bc()
+test.regenerate_job(jname_multi)
+
+# run_inp(jname_multi)
+# test.post_process_multi_buckle()
+test.post_process_multi_pv()
+
 # test.make_linear_model()
 # jname_lin = test.run_linear_model()
 # jname_riks = test.make_riks_model(pressure_set = -2)
 # run_inp(jname_riks, num_threads = 2)
-jname_pressure = test.make_force_buckling_model(temp_mult = 0.2, pressure_app = 0.1)
-run_inp(jname_pressure)
+# jname_pressure = test.make_force_buckling_model(temp_mult = 0.2, pressure_app = 0.1)
+# run_inp(jname_pressure)
 # jname = test.make_nonlin_model(temp_set = -0.332*0.3, extra_imper = [(2,0.001), (3,0.002)])
 
-delete_extra_files(jname_lin)
-delete_extra_files(jname_pressure)
+# delete_extra_files(jname_lin)
+# delete_extra_files(jname_pressure)
 # delete_extra_files(jname_riks)
 
 # run_inp(jname)
@@ -62,3 +71,5 @@ delete_extra_files(jname_pressure)
 #208: 3d testing partition on ring face (2folds)
 #209/210: riks testing (not working I think)
 #211: testing dyn --> pressure control on top face w/ (0.2, 0.1)
+#212: testing multi buckling w/ UR3 = 0 on the cap (pensive emoji)
+#212: testing multi buckling w/ all but U3 on the cap set (pensive emoji)
