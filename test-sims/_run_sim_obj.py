@@ -6,23 +6,28 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 213
+idx_try = 214
 # idx_try = 207
-bdamp = 0.0001
+# bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
 # test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
 # test.num_elem_thickness = 3
-test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four)
+test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.05)
 # test.post_process_pv()
 
-# jname_lin = test.run_linear_model()
-jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.4, num_steps = 100)
-test.add_cap_bc()
-test.regenerate_job(jname_multi)
+test.stabilization_factor = 2e-6
+
+jname_lin = test.run_linear_model()
+jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.25, num_steps = 1)
+run_inp(jname_multi)
+
+test.post_process_multi_pv()
+# test.add_cap_bc()
+# test.regenerate_job(jname_multi)
 
 # run_inp(jname_multi)
 # test.post_process_multi_buckle()
-test.post_process_multi_pv()
+# test.post_process_multi_pv()
 
 # test.make_linear_model()
 # jname_lin = test.run_linear_model()
@@ -72,4 +77,6 @@ test.post_process_multi_pv()
 #209/210: riks testing (not working I think)
 #211: testing dyn --> pressure control on top face w/ (0.2, 0.1)
 #212: testing multi buckling w/ UR3 = 0 on the cap (pensive emoji)
-#212: testing multi buckling w/ all but U3 on the cap set (pensive emoji)
+#213: try linear perturbation instead of freq for a single step [didn't work]
+#214: single step 4folds up to 0.25 to compare pv
+
