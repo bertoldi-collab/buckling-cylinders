@@ -613,6 +613,8 @@ class cylinder_model(object):
         cvol = []
         pcav = []
 
+        idx_extend_start = 0
+
         for i in range(num_freq_steps):
             idx = i + 1
             prev_step_name = 'Step-' + str(idx)
@@ -627,8 +629,10 @@ class cylinder_model(object):
                 cvol_step = [out_his_cvol[j][1] for j in range(len(out_his_cvol))]
                 pcav_step = [out_his_pcav[j][1] for j in range(len(out_his_pcav))]
 
-                cvol.extend(cvol_step)
-                pcav.extend(pcav_step)
+                cvol.extend(cvol_step[idx_extend_start:])
+                pcav.extend(pcav_step[idx_extend_start:]) 
+                    
+            idx_extend_start = 1
 
         cvol = np.asarray(cvol)
         pcav = np.asarray(pcav)
@@ -673,8 +677,7 @@ class cylinder_model(object):
         contraction = []
         twist = []
 
-        cvol = []
-        pcav = []
+        idx_extend_start = 0
 
         for i in range(num_freq_steps):
             idx = i + 1
@@ -686,7 +689,7 @@ class cylinder_model(object):
             # out_his_cvol = his_region_prev.historyOutputs['CVOL'].data
             # out_his_pcav = his_region_prev.historyOutputs['PCAV'].data
 
-            time_all.extend([frame.frameValue for frame in step_prev.frames])
+            time_all.extend([frame.frameValue for frame in step_prev.frames][idx_extend_start:])
             num_frames = len(step_prev.frames)
             twist_step, contraction_step = [np.zeros((num_frames)) for _ in range(2)]
 
@@ -700,8 +703,10 @@ class cylinder_model(object):
                 twist_step[cc] = np.mean([value.data[2] for value in field_top_UR.values])
                 # printAB(frame)
 
-            twist.extend(twist_step)
-            contraction.extend(contraction_step)
+            twist.extend(twist_step[idx_extend_start:])
+            contraction.extend(contraction_step[idx_extend_start:])
+        
+            idx_extend_start = 1
 
         data_all = np.array([time_all, contraction, twist]).T
         np.savetxt("../data_out/" + self.project + "_contraction_twist.txt",data_all)
