@@ -99,7 +99,7 @@ class cylinder_model(object):
         makes a linear buckling model and runs it; returns the job name
         '''
         jname = self.make_linear_model()
-        run_inp(jname)
+        run_inp(jname, num_threads = 1)
         self.post_process_lin_buckle(eig_name = '_lin_buckling')
         return jname
 
@@ -448,8 +448,10 @@ class cylinder_model(object):
             '''AMPLITUDE'''
             m.SmoothStepAmplitude(data=((0.0, 0.0), (1.0, 1.0)), name='Amp-1', timeSpan=STEP)
 
+            max_timestep_vol = 0.002
+            max_timestep = float(np.abs(max_timestep_vol/(3*self.temp_set)))
             m.ImplicitDynamicsStep(alpha=DEFAULT, amplitude=RAMP, 
-               application=QUASI_STATIC, initialConditions=OFF, initialInc=0.001, maxInc=0.01,
+               application=QUASI_STATIC, initialConditions=OFF, initialInc=0.001, maxInc=max_timestep,
                maxNumInc=nincre, minInc=1e-09, name='Step-1', nlgeom=ON, nohaf=OFF, previous='Initial')
 
 
