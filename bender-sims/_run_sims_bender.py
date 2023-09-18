@@ -37,8 +37,7 @@ def dyn_imp(idx_try):
 
     run_inp(jname_nonlin)
 
-    test.post_process_multi_pv()
-    test.post_process_multi_buckle()
+    test.post_process_pv()
 
     delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
     delete_extra_files(jname_nonlin)
