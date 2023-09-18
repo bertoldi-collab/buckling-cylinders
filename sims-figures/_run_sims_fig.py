@@ -14,7 +14,7 @@ else: raise ValueError('yo')
 # sim_type = '2folds'
 sim_type = str(num_folds)+'folds'
 
-version = 209
+version = 210
 
 final_temp_mult = 0.75
 bdamp = 0.001
@@ -31,7 +31,7 @@ test = full_shell(project = proj_name, simpProps = geo_props_use, imperfection =
 test.h_element = elem_size_mult * test.h_element
 jname_lin = test.run_linear_model()
 # jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.55, num_steps = 50)
-jname_nonlin = test.make_nonlin_model(temp_set = final_temp_mult*-0.332)
+jname_nonlin = test.make_nonlin_model(temp_mult = final_temp_mult)
 run_inp(jname_nonlin)
 # # run_inp(jname_multi)
 # # test.post_process_multi_buckle()
@@ -49,17 +49,19 @@ delete_extra_files(jname_nonlin)
 #new rp
 #v200: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
 #v201: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
-#v202: 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
-#v203: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + adding tangential friction
-#v204: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2
+#[used figure making] v202: 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
+#[used figure making] v203: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + adding tangential friction
+#[used figure making] v204: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2
 #v205: 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2
 #v206: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 + adding tangential friction + E_cap = 4e3 [MPa] [worse fit to data]
 #v207: [FORMED 4 FOLDS] 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 + E_cap = 4e3 [MPa] + theta = 4*pi/3
+#210: [todo] 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002), using new timestep algorithm
 
 #some minimal tests
 #v208: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 +  theta = 4*pi/3
 #v209: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 +  theta = default value (iirc pi)
 
+#########################################
 #OLD RP
 #FOUR FOLDS
 #v100: ran normal, failed at 0.777: looks like we got local hourglassing that caused the sample to bend

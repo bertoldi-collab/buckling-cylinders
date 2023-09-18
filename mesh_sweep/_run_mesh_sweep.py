@@ -29,3 +29,5 @@ for i, mesh_mult in enumerate(mesh_mult_all):
     test.post_process_multi_buckle()
     test.post_process_multi_pv()
     
+    delete_extra_files(jname_lin)
+    delete_extra_files(jname_multi)
