@@ -19,6 +19,7 @@ mesh_mult_all = [1, 0.5, 0.25, 0.125]
 
 for i, mesh_mult in enumerate(mesh_mult_all):
     test = full_shell(project = proj_name + str(idx_try + i), imperfection = 0.05, simpProps = props_use)
+    test.h_element = mesh_mult * test.h_element
 
     jname_lin = test.run_linear_model()
     jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.3, num_steps = 200)
