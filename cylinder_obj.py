@@ -77,6 +77,7 @@ class cylinder_model(object):
         self.tangential_contact = False
         self.bdamp = 0.0001
         self.adamp = 0.0
+        self.max_timestep_vol = 0.0002 #for dyn sim only
 
     def make_job(self,extra_str):
         '''
@@ -448,10 +449,10 @@ class cylinder_model(object):
             '''AMPLITUDE'''
             m.SmoothStepAmplitude(data=((0.0, 0.0), (1.0, 1.0)), name='Amp-1', timeSpan=STEP)
 
-            max_timestep_vol = 0.002
-            max_timestep = float(np.abs(max_timestep_vol/(3*self.temp_set)))
+            # max_timestep_vol = 0.0002
+            max_timestep = float(np.abs(self.max_timestep_vol/(3*self.temp_set)))
             m.ImplicitDynamicsStep(alpha=DEFAULT, amplitude=RAMP, 
-               application=QUASI_STATIC, initialConditions=OFF, initialInc=0.001, maxInc=max_timestep,
+               application=QUASI_STATIC, initialConditions=OFF, initialInc=max_timestep/2, maxInc=max_timestep,
                maxNumInc=nincre, minInc=1e-09, name='Step-1', nlgeom=ON, nohaf=OFF, previous='Initial')
 
 
@@ -939,6 +940,10 @@ class full_shell(cylinder_model):
             p4.setMeshControls(elemShape=TRI, regions=face_shell_only, technique=STRUCTURED)
         else:
             p4.setMeshControls(elemShape=QUAD_DOMINATED, regions = p4.faces, technique=FREE)
+        
+        if self.h_element < 0.07:
+            #at 0.0625 abaqus had issues using advancing front on the cap face
+            p4.setMeshControls(elemShape=QUAD_DOMINATED, regions = p4.faces, technique=FREE, algorithm=MEDIAL_AXIS)
 
         if self.mesh_order == 'quadratic':
             #todo: I think quadratic doesn't work for finite sliding so possibly just delete this
@@ -1127,6 +1132,7 @@ class full_shell(cylinder_model):
 
         '''CENTRAL NODES'''
         top_nodes = p4.sets['cap_face'].nodes
+        # printAB(len(top_nodes))
         top_norm = []
         ref_top = [rp3.xValue,rp3.yValue,rp3.zValue]
         for i in range(len(top_nodes)):
