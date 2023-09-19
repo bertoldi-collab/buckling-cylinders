@@ -6,22 +6,28 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 214
+idx_try = 219
 # idx_try = 207
 # bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
 # test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
 # test.num_elem_thickness = 3
-test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.05)
+test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.002)
 # test.post_process_pv()
 
 test.stabilization_factor = 2e-6
+test.max_timestep_vol = 0.00002
+# test.adamp = 50
 
 jname_lin = test.run_linear_model()
-jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.25, num_steps = 1)
-run_inp(jname_multi)
+jname_nonlin = test.make_nonlin_model(temp_mult = 0.3)
 
-test.post_process_multi_pv()
+run_inp(jname_nonlin)
+test.post_process_pv()
+# jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.25, num_steps = 1)
+# run_inp(jname_multi)
+
+# test.post_process_multi_pv()
 # test.add_cap_bc()
 # test.regenerate_job(jname_multi)
 
@@ -79,4 +85,8 @@ test.post_process_multi_pv()
 #212: testing multi buckling w/ UR3 = 0 on the cap (pensive emoji)
 #213: try linear perturbation instead of freq for a single step [didn't work]
 #214: single step 4folds up to 0.25 to compare pv
-
+#215: dyn imp w/ new timestep algorithm to see if it helps 2nd buckle overshoot (imperfection = 0.05 oops)
+#216: dyn imp w/ max_timestep_vol = 0.001 in cylinder_obj (imperfection = 0.002) temp_mult = 0.3 
+#217: dyn imp w/ max_timestep_vol = 0.0002 in cylinder_obj (imperfection = 0.002) temp_mult = 0.3
+#218: dyn imp w/ max_timestep_vol = 0.0002 in cylinder_obj (imperfection = 0.002) temp_mult = 0.3, adamp = 50 (for fun)
+#219: dyn imp w/ max_timestep_vol = 0.00002 now class var (imper = 0.002, temp_mult = 0.3, adamp = 0)
