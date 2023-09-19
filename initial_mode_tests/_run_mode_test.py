@@ -5,9 +5,11 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_initial = 100
-num_try_t = 25
-num_try_R = 35
+idx_initial = 10
+# num_try_t = 25
+# num_try_R = 35
+num_try_t = 2
+num_try_R = 3
 
 v_R_try = np.linspace(0.1,0.6, num_try_R) #R/H
 v_t_try = np.linspace(0.01,0.05, num_try_t) #t/H
@@ -35,8 +37,8 @@ for i, v_R in enumerate(v_R_try):
         delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg', '.odb'])
 
 printAB(n_all)
-np.savetxt('data_out/initial_mode_tests.txt', n_all, fmt = '%i')
-# np.savetxt('test_matrix_10.txt', n_all, fmt='%i')
+np.savetxt('../data_out/initial_mode_tests.txt', n_all, fmt = '%i')
+# np.savetxt('../data_out/test_matrix_10.txt', n_all, fmt='%i')
 
 
 #v10-15 test sweep: num_try_t = 2, num_try_R = 3
