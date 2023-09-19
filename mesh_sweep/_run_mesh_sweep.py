@@ -5,7 +5,7 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 100
+idx_try = 103
 
 num_folds = 4
 proj_name = str(num_folds) + 'fold-test_mesh-'
@@ -15,11 +15,14 @@ elif num_folds == 3: props_use = geo_prop_three
 elif num_folds == 4: props_use = geo_prop_four
 else: raise ValueError('yo')
 
-mesh_mult_all = [1, 0.5, 0.25, 0.125]
+# mesh_mult_all = [1, 0.5, 0.25, 0.125]
+mesh_mult_all = [0.125]
+#errored on v103 which is the last one in making the job??
 
 for i, mesh_mult in enumerate(mesh_mult_all):
     test = full_shell(project = proj_name + str(idx_try + i), imperfection = 0.05, simpProps = props_use)
     test.h_element = mesh_mult * test.h_element
+    test.stabilization_factor = 2e-6
 
     jname_lin = test.run_linear_model()
     jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.3, num_steps = 200)
