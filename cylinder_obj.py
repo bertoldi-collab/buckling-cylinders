@@ -467,13 +467,16 @@ class cylinder_model(object):
         
         else:
             prev_step_name = 'Initial'
+            if len(temp_list) == 1: inc_mult = 1e-2
+            else: inc_mult = 1
+            
             for i in range(len(temp_list)):
                 current_temp = temp_list[i]
                 idx = i + 1
 
                 #create static step for moving, then buckle step for analysis
-                inc_max = np.min([0.05*len(temp_list), 1])
-                inc_initial = np.min([0.01*len(temp_list), 1])
+                inc_max = np.min([0.05*len(temp_list), 1]) * inc_mult
+                inc_initial = np.min([0.01*len(temp_list), 1]) * inc_mult
                 inc_min = 1e-11
 
                 static_step_name = 'Step-' + str(idx)
