@@ -739,6 +739,45 @@ class cylinder_model(object):
         data_all = np.array([time_all, contraction_all, twist_all]).T
         np.savetxt("../data_out/" + self.project + "_contraction_twist.txt",data_all)
 
+    def post_process_bend_angle(self):
+        project = self.project + '_post_buckling'
+        odb = openOdb(project + '.odb')
+        part_name = 'Merged'
+        i_name = part_name.upper() + '-1'
+
+        #get number of frames and initialize output variables
+        num_frames = len(odb.steps['Step-1'].frames)
+
+        ba_all = np.zeros((num_frames))
+
+        top_nodes = odb.rootAssembly.instances[i_name].nodeSets['CAP_FACE']
+
+        #iterate through frames and get the mean u3 and ur3 for the cap face nodes
+        for cc,frame in enumerate(odb.steps['Step-1'].frames):
+            field_top_coord = frame.fieldOutputs['COORD'].getSubset(region = top_nodes, position = NODAL)
+            # field_top_U = frame.fieldOutputs['U'].getSubset(region = top_nodes, position = NODAL)
+
+            a_temp = [np.append(field_top_coord.values[ii].data[:2], 1.) for ii in range(len(top_nodes))]
+            z_temp = [field_top_coord.values[ii].data[2] for ii in range(len(top_nodes))]
+
+            #this is solving the plane equation using the normal equations
+            x_temp = np.dot(np.dot(np.linalg.inv(np.dot(a_temp.T,a_temp)),a_temp.T),z_temp)
+            normal_temp = np.array([-x_temp[0],-x_temp[1],1])/np.linalg.norm([-x_temp[0],-x_temp[1],1])
+
+            #angle between the two vectors [ba = "bending angle"]
+            ba_temp = np.dot(np.array([0,0,1.]),normal_temp.T)
+
+            #if ba_temp > 1, then something has gone wrong? or it's flat?
+            #but valid domain of np.arccos is [-1,1]
+            if ba_temp >1.:
+                ba_all[i] = 0.
+            else:
+                ba_all[i] = np.arccos(ba_temp)
+        odb.close()
+
+        data_all = np.array(ba_all).T
+        np.savetxt("../data_out/" + self.project + "_bending_angle.txt", data_all)
+
     def post_process_lin_centernodes(self, mode = 1, max_scale = 0.1):
         '''
         mode is eigenmode, 1-indexed
