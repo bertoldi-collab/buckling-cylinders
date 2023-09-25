@@ -6,24 +6,38 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 219
+idx_try = 223
 # idx_try = 207
 # bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
 # test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
 # test.num_elem_thickness = 3
-test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.002)
-# test.post_process_pv()
+mesh_mult = 0.25
+test = full_shell(project = '3fold-imperfection-' + str(idx_try), simpProps = geo_prop_three, imperfection = 0.002)
 
-test.stabilization_factor = 2e-6
-test.max_timestep_vol = 0.00002
-# test.adamp = 50
-
+test.mesh_shape = 'tri'
+test.h_element = mesh_mult * test.h_element
 jname_lin = test.run_linear_model()
-jname_nonlin = test.make_nonlin_model(temp_mult = 0.3)
+num_folds = test.post_process_num_folds()
+printAB('num folds: ' + str(num_folds))
 
-run_inp(jname_nonlin)
-test.post_process_pv()
+delete_extra_files(jname_lin)
+
+
+##### stuff for testing dyn imp bonus bump #####
+# test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.002)
+
+# test.stabilization_factor = 2e-6
+# test.max_timestep_vol = 0.00002
+# # test.adamp = 50
+
+# jname_lin = test.run_linear_model()
+# jname_nonlin = test.make_nonlin_model(temp_mult = 0.3)
+
+# run_inp(jname_nonlin)
+# test.post_process_pv()
+###########################
+
 # jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.25, num_steps = 1)
 # run_inp(jname_multi)
 
@@ -90,3 +104,7 @@ test.post_process_pv()
 #217: dyn imp w/ max_timestep_vol = 0.0002 in cylinder_obj (imperfection = 0.002) temp_mult = 0.3
 #218: dyn imp w/ max_timestep_vol = 0.0002 in cylinder_obj (imperfection = 0.002) temp_mult = 0.3, adamp = 50 (for fun)
 #219: dyn imp w/ max_timestep_vol = 0.00002 now class var (imper = 0.002, temp_mult = 0.3, adamp = 0)
+#220: 3folds linear buckling quad mesh
+#221: 3folds linear buckling tri mesh
+#222: 3folds linear buckling quad mesh, mesh_mult = 0.25
+#223: 3folds linear buckling tri mesh, mesh_mult = 0.25
