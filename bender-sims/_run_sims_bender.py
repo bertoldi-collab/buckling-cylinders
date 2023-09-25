@@ -29,7 +29,11 @@ def damping_sweep(idx_try):
 
 def dyn_imp(idx_try):
     proj_name = 'bender-dyn-imp-v' + str(idx_try)
-    test = full_shell(project = proj_name, fullProps = geo_prop_bend, imperfection = 0.002)
+
+    deg_thin = 70
+    rad_thick = (360 - deg_thin)*np.pi/180
+    props_use = geoPropsFull(10, 18, 5, 0.856, 0.224, 1.2, 1.2, 1.2, rad_thick)
+    test = full_shell(project = proj_name, fullProps = props_use, imperfection = 0.002)
 
 
     jname_lin = test.run_linear_model()
@@ -43,13 +47,14 @@ def dyn_imp(idx_try):
     delete_extra_files(jname_nonlin)
 
 def main():
-    idx_try = 141
+    idx_try = 142
     dyn_imp(idx_try)
 
 main()
 
 #v140: dyn imp bender
 #v141: dyn imp bender w/ new parameters, imperfection = 0.002
+#v142: dyn imp bender w/ same prop as above, but 70 deg thin angle
 
 #v200s: bender multi, damping_sweep = 2*np.logspace(-8, -4, num_samp), steps = 100, max_temp_mult = 0.5, imperfection = 0.05
 #v210s: bender multi, damping_sweep = 2*np.logspace(-8, -4, num_samp), steps = 100, max_temp_mult = 0.5, imperfection = 0.1, eig_idx = 2
