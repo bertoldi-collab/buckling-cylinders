@@ -741,6 +741,61 @@ class cylinder_model(object):
         data_all = np.array([time_all, contraction_all, twist_all]).T
         np.savetxt("../data_out/" + self.project + "_contraction_twist.txt",data_all)
 
+    def post_process_lin_centernodes(self, mode = 1, max_scale = 0.1):
+        '''
+        mode is eigenmode, 1-indexed
+        exports an auto-computed coord calculated st the largest deformation is max_scale * largest dimension
+        '''
+        #https://www.reddit.com/r/Abaqus/comments/tk25jm/please_can_someone_explain_the_abaqus_scale/
+        # ^^ suggestion for deformation factor
+        
+        # Import the relavent data
+        project = self.project + '_lin_buckling'
+        part_name = 'Merged'
+        i_name = part_name.upper() + '-1'
+        # Post-processing
+        odb = openOdb(project + '.odb')
+        step=odb.steps['Step-1']
+        frames = step.frames
+
+        # f2: Get displacement of center nodes during first mode
+        
+        center_nodes = odb.rootAssembly.instances[i_name].nodeSets['CENTERNODES']
+        # printAB(center_nodes.nodes[0])
+        num_center_nodes = len(center_nodes.nodes)
+
+        disp_centernodes = np.zeros((num_center_nodes,2))
+        coord_centernodes_init = np.zeros((num_center_nodes,2))
+        phase_all = np.zeros((num_center_nodes,))
+
+        disp = frames[mode].fieldOutputs['U']
+        disp_field_centernodes = disp.getSubset(region = center_nodes, position = NODAL)
+        for i, node in enumerate(disp_field_centernodes.values):
+            x_init, y_init = np.asarray(center_nodes.nodes[i].coordinates)[:2]
+            tan_temp = np.arctan2(y_init, x_init)
+            if tan_temp < 0:
+                phase_all[i] = tan_temp + 2*np.pi
+            else:
+                phase_all[i] = tan_temp
+            # coord_centernodes_init[i,:] = np.asarray(center_nodes.nodes[i].coordinates)[:2]
+            disp_cur = node.data
+            disp_centernodes[i, :] = np.array([disp_cur[0], disp_cur[1]])
+            coord_centernodes_init[i,:] = np.array([x_init, y_init])
+        odb.close()
+
+        resort_idx = np.argsort(phase_all)
+        
+        max_disp_sim = np.max([[np.linalg.norm(disp_centernodes[i,:]) for i in range(num_center_nodes)]])
+        max_dimension = np.max([self.H, self.R])
+
+        deformation_factor = max_scale * max_dimension / max_disp_sim
+        #calculate r disp and use phase to resort disp
+        # printAB(disp_centernodes)
+        coord_centernodes_final = coord_centernodes_init + deformation_factor * disp_centernodes
+        np.savetxt('../data_out/' + self.project + '_coord_lin_mode.txt', coord_centernodes_final[resort_idx,:])
+        # np.savetxt('../data_out/' + self.project + '_coord_init_lin_mode.txt', coord_centernodes_init[resort_idx,:])
+        # np.savetxt('../data_out/' + self.project + '_disp_lin_mode.txt', disp_centernodes[resort_idx,:])
+    
     def post_process_num_folds(self):
         # Import the relavent data
         project = self.project + '_lin_buckling'
