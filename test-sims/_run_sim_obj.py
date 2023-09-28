@@ -6,22 +6,27 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 223
+idx_try = 222
 # idx_try = 207
 # bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
 # test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
 # test.num_elem_thickness = 3
+
+#### stuff for testing 3folds linear mode as a fxn of mesh size and shape ###
 mesh_mult = 0.25
 test = full_shell(project = '3fold-imperfection-' + str(idx_try), simpProps = geo_prop_three, imperfection = 0.002)
 
-test.mesh_shape = 'tri'
+# test.mesh_shape = 'tri'
 test.h_element = mesh_mult * test.h_element
-jname_lin = test.run_linear_model()
-num_folds = test.post_process_num_folds()
-printAB('num folds: ' + str(num_folds))
 
-delete_extra_files(jname_lin)
+test.post_process_lin_centernodes(mode = 3)
+# jname_lin = test.run_linear_model()
+# num_folds = test.post_process_num_folds()
+# printAB('num folds: ' + str(num_folds))
+
+# delete_extra_files(jname_lin)
+##########
 
 
 ##### stuff for testing dyn imp bonus bump #####

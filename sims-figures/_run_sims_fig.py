@@ -14,11 +14,11 @@ else: raise ValueError('yo')
 # sim_type = '2folds'
 sim_type = str(num_folds)+'folds'
 
-version = 210
+version = 211
 
 final_temp_mult = 0.75
 bdamp = 0.001
-elem_size_mult = 0.5
+elem_size_mult = 0.25
 
 proj_name = 'sim-long-' + sim_type + '-' + str(version)
 
@@ -31,17 +31,18 @@ test = full_shell(project = proj_name, simpProps = geo_props_use, imperfection =
 test.h_element = elem_size_mult * test.h_element
 jname_lin = test.run_linear_model()
 # jname_multi = test.make_nonlin_multi_buckle(bdamp, max_temp_mult = 0.55, num_steps = 50)
-jname_nonlin = test.make_nonlin_model(temp_mult = final_temp_mult)
-run_inp(jname_nonlin)
+# jname_nonlin = test.make_nonlin_model(temp_mult = final_temp_mult)
+# run_inp(jname_nonlin)
 # # run_inp(jname_multi)
 # # test.post_process_multi_buckle()
 
-test.post_process_pv()
-test.post_process_contraction_twist()
-test.post_process_centernodes()
+# test.post_process_pv()
+# test.post_process_contraction_twist()
+# test.post_process_centernodes()
+test.post_process_lin_centernodes(mode = 3)
 delete_extra_files(jname_lin, ['.fil', '.sta', '.log'])
 # # delete_extra_files(jname_multi)
-delete_extra_files(jname_nonlin)
+# delete_extra_files(jname_nonlin)
 
 # num_folds = test.post_process_num_folds()
 # printAB(num_folds)
@@ -55,7 +56,9 @@ delete_extra_files(jname_nonlin)
 #v205: 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2
 #v206: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 + adding tangential friction + E_cap = 4e3 [MPa] [worse fit to data]
 #v207: [FORMED 4 FOLDS] 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 + E_cap = 4e3 [MPa] + theta = 4*pi/3
-#210: [todo] 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002), using new timestep algorithm
+#210: 4folds just lin, mesh_mult = 0.25
+#211: 3folds just lin, mesh_mult = 0.25
+#212: 2folds just lin, mesh_mult = 0.25
 
 #some minimal tests
 #v208: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 +  theta = 4*pi/3
