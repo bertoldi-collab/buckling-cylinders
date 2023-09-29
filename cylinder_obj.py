@@ -467,7 +467,7 @@ class cylinder_model(object):
         
         else:
             prev_step_name = 'Initial'
-            if len(temp_list) == 1: inc_mult = 1e-2
+            if len(temp_list) == 1: inc_mult = 1e-1
             else: inc_mult = 1
             
             for i in range(len(temp_list)):
@@ -506,7 +506,7 @@ class cylinder_model(object):
                 # m.FluidCavityPressureBC(amplitude=UNSET, createStepName=buckle_step_name,
                 #     fixed=OFF, fluidCavity='Int-1', magnitude=-1.0,  name='BC-buckle-' + str(idx))
 
-
+                # prev_step_name = static_step_name
                 prev_step_name = buckle_step_name
 
             #add keyword for making fil file- how does this interact w/ multiple buckle steps?
@@ -608,13 +608,8 @@ class cylinder_model(object):
 
         # printAB(odb.steps)
         # printAB(len(odb.steps))
+        # num_freq_steps = len(odb.steps)
         num_freq_steps = len(odb.steps)/2
-
-        data_all = np.empty((num_freq_steps, 11))
-        data_all[:] = np.nan
-
-        data_eig_val = np.empty((num_freq_steps, 11))
-        data_eig_val[:] = np.nan
 
         cvol = []
         pcav = []

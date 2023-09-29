@@ -6,7 +6,7 @@ sys.path.append('../')
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 222
+idx_try = 231
 # idx_try = 207
 # bdamp = 0.0001
 # jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
@@ -14,13 +14,13 @@ idx_try = 222
 # test.num_elem_thickness = 3
 
 #### stuff for testing 3folds linear mode as a fxn of mesh size and shape ###
-mesh_mult = 0.25
-test = full_shell(project = '3fold-imperfection-' + str(idx_try), simpProps = geo_prop_three, imperfection = 0.002)
+# mesh_mult = 0.25
+# test = full_shell(project = '3fold-imperfection-' + str(idx_try), simpProps = geo_prop_three, imperfection = 0.002)
 
-# test.mesh_shape = 'tri'
-test.h_element = mesh_mult * test.h_element
+# # test.mesh_shape = 'tri'
+# test.h_element = mesh_mult * test.h_element
 
-test.post_process_lin_centernodes(mode = 3)
+# test.post_process_lin_centernodes(mode = 3)
 # jname_lin = test.run_linear_model()
 # num_folds = test.post_process_num_folds()
 # printAB('num folds: ' + str(num_folds))
@@ -31,16 +31,23 @@ test.post_process_lin_centernodes(mode = 3)
 
 ##### stuff for testing dyn imp bonus bump #####
 # test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.002)
+test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.05)
 
-# test.stabilization_factor = 2e-6
+test.stabilization_factor = 2e-8
+# test.static_stable = False
+
 # test.max_timestep_vol = 0.00002
 # # test.adamp = 50
 
-# jname_lin = test.run_linear_model()
-# jname_nonlin = test.make_nonlin_model(temp_mult = 0.3)
+jname_lin = test.run_linear_model()
+jname_nonlin = test.make_nonlin_model(temp_mult = 0.35, is_buckling = True)
+# jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.35, num_steps = 100)
 
-# run_inp(jname_nonlin)
-# test.post_process_pv()
+run_inp(jname_nonlin)
+# run_inp(jname_multi)
+test.post_process_pv()
+# test.post_process_multi_pv()
+# test.post_process_multi_buckle()
 ###########################
 
 # jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.25, num_steps = 1)
@@ -113,3 +120,11 @@ test.post_process_lin_centernodes(mode = 3)
 #221: 3folds linear buckling tri mesh
 #222: 3folds linear buckling quad mesh, mesh_mult = 0.25
 #223: 3folds linear buckling tri mesh, mesh_mult = 0.25
+#224: 4folds single static step (followed by freq) temp_mult = 0.35, inc_mult = 1e-2 (cylinder_obj), imper = 0.002, stable_fac = 2e-6
+#225: 4folds single static step (followed by freq) temp_mult = 0.35, inc_mult = 1e-2 (cylinder_obj), imper = 0.05, stable_fac = 2e-6
+#226: 4folds multi buckle, num_steps = 100, max_temp_mult = 0.35, imper = 0.05, stable_fac = 2e-6
+#227: 4folds multi buckle, num_steps = 5, max_temp_mult = 0.35, imper = 0.05, stable_fac = 2e-6, manually deleting freq steps
+#228: 4folds multi buckle, num_steps = 100, max_temp_mult = 0.35, imper = 0.05, stable_fac = 2e-6, manually deleting freq steps --> got same multi result
+#229: 4folds single static step (followed by freq), temp mult = 0.35, imper = 0.05, no stable
+#230: 4folds single static step (followed by freq), temp mult = 0.35, imper = 0.05, no stable, auto time max timestep = 0.05
+#231: 4folds single static step (followed by freq), temp mult = 0.35, imper = 0.05, stable_fac = 2e-8, inc_mult = 1e-1 --> resolved multi behavior!!
