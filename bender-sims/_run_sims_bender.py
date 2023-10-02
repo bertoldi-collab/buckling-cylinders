@@ -42,12 +42,14 @@ def dyn_imp(idx_try):
     run_inp(jname_nonlin)
 
     test.post_process_pv()
+    test.post_process_bend_angle()
 
     delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
     delete_extra_files(jname_nonlin)
 
+
 def main():
-    idx_try = 142
+    idx_try = 141
     dyn_imp(idx_try)
 
 main()

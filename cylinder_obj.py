@@ -757,8 +757,8 @@ class cylinder_model(object):
             field_top_coord = frame.fieldOutputs['COORD'].getSubset(region = top_nodes, position = NODAL)
             # field_top_U = frame.fieldOutputs['U'].getSubset(region = top_nodes, position = NODAL)
 
-            a_temp = [np.append(field_top_coord.values[ii].data[:2], 1.) for ii in range(len(top_nodes))]
-            z_temp = [field_top_coord.values[ii].data[2] for ii in range(len(top_nodes))]
+            a_temp = np.array([np.append(value.data[:2], 1.) for value in field_top_coord.values])
+            z_temp = np.array([value.data[2] for value in field_top_coord.values])
 
             #this is solving the plane equation using the normal equations
             x_temp = np.dot(np.dot(np.linalg.inv(np.dot(a_temp.T,a_temp)),a_temp.T),z_temp)
@@ -770,9 +770,9 @@ class cylinder_model(object):
             #if ba_temp > 1, then something has gone wrong? or it's flat?
             #but valid domain of np.arccos is [-1,1]
             if ba_temp >1.:
-                ba_all[i] = 0.
+                ba_all[cc] = 0.
             else:
-                ba_all[i] = np.arccos(ba_temp)
+                ba_all[cc] = np.arccos(ba_temp)
         odb.close()
 
         data_all = np.array(ba_all).T
