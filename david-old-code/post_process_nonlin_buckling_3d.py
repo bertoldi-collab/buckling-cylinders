@@ -84,8 +84,8 @@ def post_process(project):
 
 	#Get strain energy
 	out_name_3 = odb.steps['Step-1'].historyRegions.keys(0)[0];
-	out_his_9 = odb.steps['Step-1'].historyRegions[out_name_3].historyOutputs['ALLSE'].data;
-	SE = [out_his_9[ii][1] for ii in range(n_end)];
+	out_his_9 = odb.steps['Step-1'].historyRegions[out_name_3].historyOutputs['ALLSE'].data
+	SE = [out_his_9[ii][1] for ii in range(n_end)]
 
 	#Get bending angle and twist angle from plane normals (RIGID BODY MOTION)
 	idx = 1
