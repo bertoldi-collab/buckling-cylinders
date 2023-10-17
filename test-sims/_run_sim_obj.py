@@ -2,16 +2,25 @@ import sys
 
 sys.path.append('../')
 
-# from buck_cylinder_obj import *
 from cylinder_obj import *
 from geo_prop import *
 
-idx_try = 231
-# idx_try = 207
-# bdamp = 0.0001
-# jname_nonlin = '4fold-imperfection-'+str(idx_try) + '_post_buckling'
+idx_try = 232
 # test = full_3d(project = '2fold-3d-'+str(idx_try), simpProps = geo_prop_two)
 # test.num_elem_thickness = 3
+
+#### stuff for 3folds
+test = full_shell(project = '3fold-imperfection-' + str(idx_try), simpProps = geo_prop_three, imperfection = 0.002)
+test.stabilization_factor = 2e-8
+jname_lin = test.run_linear_model()
+jname_nonlin = test.make_nonlin_model(temp_mult = 0.15, is_buckling = True)
+
+run_inp(jname_nonlin)
+
+test.post_process_centernodes()
+
+delete_extra_files(jname_lin)
+delete_extra_files(jname_nonlin)
 
 #### stuff for testing 3folds linear mode as a fxn of mesh size and shape ###
 # mesh_mult = 0.25
@@ -31,21 +40,21 @@ idx_try = 231
 
 ##### stuff for testing dyn imp bonus bump #####
 # test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.002)
-test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.05)
+# test = full_shell(project = '4fold-imperfection-' + str(idx_try), simpProps = geo_prop_four, imperfection = 0.05)
 
-test.stabilization_factor = 2e-8
+# test.stabilization_factor = 2e-8
 # test.static_stable = False
 
 # test.max_timestep_vol = 0.00002
 # # test.adamp = 50
 
-jname_lin = test.run_linear_model()
-jname_nonlin = test.make_nonlin_model(temp_mult = 0.35, is_buckling = True)
+# jname_lin = test.run_linear_model()
+# jname_nonlin = test.make_nonlin_model(temp_mult = 0.35, is_buckling = True)
 # jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.35, num_steps = 100)
 
-run_inp(jname_nonlin)
+# run_inp(jname_nonlin)
 # run_inp(jname_multi)
-test.post_process_pv()
+# test.post_process_pv()
 # test.post_process_multi_pv()
 # test.post_process_multi_buckle()
 ###########################
@@ -128,3 +137,4 @@ test.post_process_pv()
 #229: 4folds single static step (followed by freq), temp mult = 0.35, imper = 0.05, no stable
 #230: 4folds single static step (followed by freq), temp mult = 0.35, imper = 0.05, no stable, auto time max timestep = 0.05
 #231: 4folds single static step (followed by freq), temp mult = 0.35, imper = 0.05, stable_fac = 2e-8, inc_mult = 1e-1 --> resolved multi behavior!!
+#232: 3folds single static step (""), temp_mult = 0.15, imper = 0.002, stable_fac = 2e-8, extracting centernodes to test ability to resolve num folds

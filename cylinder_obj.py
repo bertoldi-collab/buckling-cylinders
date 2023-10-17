@@ -833,14 +833,19 @@ class cylinder_model(object):
         # np.savetxt('../data_out/' + self.project + '_coord_init_lin_mode.txt', coord_centernodes_init[resort_idx,:])
         # np.savetxt('../data_out/' + self.project + '_disp_lin_mode.txt', disp_centernodes[resort_idx,:])
     
-    def post_process_num_folds(self):
+    def post_process_num_folds(self, extra_str = '_lin_buckling', frame_sp = 1):
+        '''
+        post process number of folds from a given frame; default behavior to extract num_folds from frame 1 of lin_buckling
+        * extra_str: additional string to append to self.project to find the odb file
+        * frame_sp: which frame to extract from Step-1
+        '''
         # Import the relavent data
-        project = self.project + '_lin_buckling'
+        project = self.project + extra_str
         part_name = 'Merged'
         i_name = part_name.upper() + '-1'
         # Post-processing
         odb = openOdb(project + '.odb')
-        step=odb.steps['Step-1']
+        step = odb.steps['Step-1']
         frames = step.frames
 
         # f2: Get displacement of center nodes during first mode
@@ -853,7 +858,7 @@ class cylinder_model(object):
         coord_centernodes_init = np.zeros((num_center_nodes,2))
         phase_all = np.zeros((num_center_nodes,))
 
-        disp = frames[1].fieldOutputs['U']
+        disp = frames[frame_sp].fieldOutputs['U']
         disp_field_centernodes = disp.getSubset(region = center_nodes, position = NODAL)
         for i, node in enumerate(disp_field_centernodes.values):
             x_init, y_init = np.asarray(center_nodes.nodes[i].coordinates)[:2]
@@ -880,7 +885,7 @@ class cylinder_model(object):
 
         fft_disp_r = np.fft.rfft(disp_r - np.mean(disp_r))
         freq = np.arange(int(disp_r.size/2) + 1)
-        val = freq[np.argmax(np.abs(fft_disp_r))]
+        val = int(freq[np.argmax(np.abs(fft_disp_r))])
 
         return val
 
