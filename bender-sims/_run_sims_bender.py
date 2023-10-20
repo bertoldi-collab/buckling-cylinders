@@ -27,12 +27,12 @@ def damping_sweep(idx_try):
         delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
         delete_extra_files(jname_multi)
 
-def dyn_imp(idx_try):
+def dyn_imp(idx_try, deg_thin = 90, t_thin = 0.224, t_thick = 0.856):
     proj_name = 'bender-dyn-imp-v' + str(idx_try)
 
-    deg_thin = 70
     rad_thick = (360 - deg_thin)*np.pi/180
-    props_use = geoPropsFull(10, 18, 5, 0.856, 0.224, 1.2, 1.2, 1.2, rad_thick)
+
+    props_use = geoPropsFull(10, 18, 5, t_thick, t_thin, 1.2, 1.2, 1.2, rad_thick)
     test = full_shell(project = proj_name, fullProps = props_use, imperfection = 0.002)
 
 
@@ -49,8 +49,19 @@ def dyn_imp(idx_try):
 
 
 def main():
-    idx_try = 141
-    dyn_imp(idx_try)
+    # idx_try = 141
+    idx_initial = 200
+    theta_sweep = np.linspace(30, 150, 7)
+    thickness_ratio_sweep = np.linspace(0.1, 0.9, 9)
+
+    t_thick_const = 0.85
+
+    for i, theta in enumerate(theta_sweep):
+        for j, t_ratio in enumerate(thickness_ratio_sweep):
+            idx_try = idx_initial + i*len(thickness_ratio_sweep) + j
+
+            t_thin_cur = t_ratio * t_thick_const
+            dyn_imp(idx_try, deg_thin = theta, t_thin = t_thin_cur, t_thick = t_thick_const)
 
 main()
 
