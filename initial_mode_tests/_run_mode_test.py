@@ -43,7 +43,7 @@ for i, v_R in enumerate(v_R_try):
         n_all[i,j] = num_folds
         n_all_dyn[i,j] = num_folds_dyn
         delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg', '.odb'])
-        delete_extra_files(jname_nonlin, ['.sta', '.log', '.dat', '.msg'])
+        delete_extra_files(jname_nonlin, ['.sta', '.log', '.dat', '.msg', '.odb'])
 
 printAB(n_all)
 printAB('----------------------')
