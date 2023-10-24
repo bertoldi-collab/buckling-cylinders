@@ -200,6 +200,31 @@ class cylinder_model(object):
         jname = self.save_cae_write_job(extra_str)
         return jname
 
+    def make_static_dyn_model(self, temp_mult_static, temp_mult_final = None, eig_idx = None):
+        '''
+        documentation goes here
+        '''
+        eig_name = '_lin_buckling'
+        extra_str = '_post_buckling'
+
+        if temp_mult_final is not None:
+            if temp_mult_final <= 1. and temp_mult_final >= 0:
+                self.temp_set = -0.332*temp_mult_final
+            else:
+                raise ValueError("temp mult is out of bounds!")
+        temp_set_static = -0.332 * temp_mult_static
+        
+        if eig_idx is None:
+            eig_idx = self.get_eig_idx(eig_name = eig_name)
+        
+        self.make_geometry(nonlinear_model = True)
+        self.finish_nonlinear_initial()
+        self.finish_nonlinear_steps(make_static_dyn = True,temp_list = [temp_set_static, self.temp_set])
+        idx_keyword = self.add_imperfection(eig_idx, eig_name = eig_name)
+
+        jname = self.save_cae_write_job(extra_str)
+        return jname
+
     def make_linear_model(self):
         '''
         makes a linear buckling model; returns job name
@@ -426,7 +451,7 @@ class cylinder_model(object):
         m.HistoryOutputRequest(createStepName='Step-1', name='H-Output-1-cavity', rebar=EXCLUDE, 
             region=fluid_rp, sectionPoints=DEFAULT, variables=('PCAV', 'CVOL'))
 
-    def finish_nonlinear_steps(self, make_dyn = False, temp_list = None):
+    def finish_nonlinear_steps(self, make_dyn = False, temp_list = None, make_static_dyn = False):
         '''
         finishes adding steps to a post buckling analysis
         * default behavior is to make 1 static and 1 buckle step
@@ -455,16 +480,47 @@ class cylinder_model(object):
                application=QUASI_STATIC, initialConditions=OFF, initialInc=max_timestep/2, maxInc=max_timestep,
                maxNumInc=nincre, minInc=1e-09, name='Step-1', nlgeom=ON, nohaf=OFF, previous='Initial')
 
-
-            '''REQUESTS''' 
-            #general- field output
-            m.fieldOutputRequests['F-Output-1'].setValues(numIntervals=nincre_output, timeMarks=OFF,
-                variables=('S', 'PE', 'PEEQ', 'PEMAG', 'LE', 'U','RF', 'CF', 'CSTRESS', 'CDISP', 'COORD'))
-
             #temp bd condition
             m.Temperature(amplitude='Amp-1', createStepName='Step-1', crossSectionDistribution=CONSTANT_THROUGH_THICKNESS,
                 distributionType=UNIFORM, magnitudes=(temp_list[0], ), name='Predefined Field-2', region=fluid_rp)
-        
+        elif make_static_dyn:
+            '''AMPLITUDES'''
+            m.TabularAmplitude(data=((0.0, 0.0), (1.0, 1.0)), name='Amp-ramp', timeSpan=STEP)
+            m.SmoothStepAmplitude(data=((0.0, temp_list[0]/temp_list[1]), (1.0, 1.0)), name='Amp-smooth', timeSpan=STEP)
+            #make 1 static step to temp_list[0] and then a dyn step to temp_list[1]
+            inc_mult = 1e-1
+
+            inc_max = 0.05 * inc_mult
+            inc_initial = 0.01 * inc_mult
+            inc_min = 1e-11
+            
+            prev_step_name = 'Initial'
+            static_step_name = 'Step-1'
+            dyn_step_name = 'Step-2'
+
+            #create static step
+            if self.static_stable:
+                static_step = m.StaticStep(initialInc=inc_initial, maxInc=inc_max, maxNumInc=nincre, minInc=inc_min,
+                    name=static_step_name, nlgeom=ON, previous=prev_step_name, adaptiveDampingRatio=None, continueDampingFactors=False,
+                    stabilizationMagnitude=self.stabilization_factor, stabilizationMethod=DAMPING_FACTOR)
+            else:
+                static_step = m.StaticStep(initialInc=inc_initial, maxInc=inc_max, maxNumInc=nincre, minInc=inc_min,
+                    name=static_step_name, nlgeom=ON, previous=prev_step_name)
+            
+            #create dyn step
+            m.ImplicitDynamicsStep(alpha=DEFAULT, amplitude=RAMP, 
+               application=QUASI_STATIC, initialConditions=OFF, initialInc=0.001, maxInc=0.01,
+               maxNumInc=nincre, minInc=1e-09, name=dyn_step_name, nlgeom=ON, nohaf=OFF, previous=static_step_name)
+            
+            #temps
+            m.Temperature(amplitude='Amp-ramp', createStepName=static_step_name,
+                crossSectionDistribution=CONSTANT_THROUGH_THICKNESS, distributionType=UNIFORM,
+                magnitudes=(temp_list[0], ), name='Temp-Move-1', region=fluid_rp)
+            m.Temperature(amplitude='Amp-smooth', createStepName=dyn_step_name,
+                crossSectionDistribution=CONSTANT_THROUGH_THICKNESS, distributionType=UNIFORM,
+                magnitudes=(temp_list[1], ), name='Temp-Move-2', region=fluid_rp)
+
+
         else:
             prev_step_name = 'Initial'
             if len(temp_list) == 1: inc_mult = 1e-1
@@ -599,9 +655,9 @@ class cylinder_model(object):
         np.savetxt("../data_out/" + self.project + "_eig_freq.txt",data_all)
         np.savetxt("../data_out/" + self.project + "_eig_val.txt",data_eig_val)
     
-    def post_process_multi_pv(self):
+    def post_process_multi_pv(self, step_div_factor = 2, extra_str = '_multi_buckling'):
         #Import the relavent data
-        project = self.project + '_multi_buckling'
+        project = self.project + extra_str
         part_name = 'Merged'
         # Post-processing
         odb = openOdb(project + '.odb')
@@ -609,7 +665,7 @@ class cylinder_model(object):
         # printAB(odb.steps)
         # printAB(len(odb.steps))
         # num_freq_steps = len(odb.steps)
-        num_freq_steps = len(odb.steps)/2
+        num_freq_steps = len(odb.steps)/step_div_factor
 
         cvol = []
         pcav = []
@@ -660,9 +716,9 @@ class cylinder_model(object):
         data_all = np.array([cvol,pcav]).T
         np.savetxt("../data_out/" + self.project + "_pcav_cvol.txt",data_all)
     
-    def post_process_multi_contraction_twist(self):
+    def post_process_multi_contraction_twist(self, step_div_factor = 2, extra_str = '_multi_buckling'):
         #Import the relavent data
-        project = self.project + '_multi_buckling'
+        project = self.project + extra_str
         printAB(project)
         part_name = 'Merged'
         i_name = part_name.upper() + '-1'
@@ -672,7 +728,7 @@ class cylinder_model(object):
 
         # printAB(odb.steps)
         # printAB(len(odb.steps))
-        num_freq_steps = len(odb.steps)/2
+        num_freq_steps = len(odb.steps)/step_div_factor
 
         time_all = []
         contraction = []
