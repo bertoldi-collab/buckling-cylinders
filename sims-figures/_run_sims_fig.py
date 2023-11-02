@@ -52,7 +52,7 @@ delete_extra_files(jname_nonlin)
 #v200: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
 #v201: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
 #[OLD used figure making] v202: 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002)
-#[OLD used figure making] v203: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + adding tangential friction
+#[used figure making] v203: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + adding tangential friction
 #[OLD used figure making] v204: 3folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2
 #v205: 4folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2
 #v206: 2folds up to 0.75, extracting pv/contraction/twist/centernodes (imperfection 0.002) + mesh_size/2 + adding tangential friction + E_cap = 4e3 [MPa] [worse fit to data]
@@ -68,8 +68,8 @@ delete_extra_files(jname_nonlin)
 #[used figure ses] 217: 3folds, 1 static step, mesh_mult = 1.0, temp_mult = 0.5, stable_fac = 2e-8, imper = 0.005, extracting pv/cont/twist/centernodes
 #218: 3folds, 1 static step, mesh_mult = 1.0, temp_mult = 0.5, stable_fac = 2e-8, imper = 0.005, extracting pv/cont/twist/centernodes, eig_idx = 3
 
-#219: 4folds, static/dyn 0.22/0.7 (stable_fac = 2e-8, imper = 0.005)
-#220: 3folds, static/dyn 0.31/0.7 (stable fac = 2e-8, imper = 0.002)
+#[used figure making] 219: 4folds, static/dyn 0.22/0.7 (stable_fac = 2e-8, imper = 0.005)
+#[used figure making] 220: 3folds, static/dyn 0.31/0.7 (stable fac = 2e-8, imper = 0.002)
 #221: 2folds, static/dyn 0.31/0.7 (stable fac = 2e-8, imper = 0.002)
 
 #some minimal tests
