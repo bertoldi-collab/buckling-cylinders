@@ -29,7 +29,8 @@ def static_single(idx_try, R, H, t):
 
 def main():
 
-    idx_initial = 100
+    # idx_initial = 100
+    idx_initial = 136
     # n1 = 3
     # n2 = 2
     # v1_sweep = np.linspace(0.1, 0.6, n1)
@@ -37,8 +38,9 @@ def main():
 
     n1 = 7
     n2 = 6
-    v1_sweep = np.linspace(0.2, 0.5, n1)
+    # v1_sweep = np.linspace(0.2, 0.5, n1)
     v2_sweep = np.linspace(0.02, 0.04, n2)
+    v1_sweep = [0.5]
 
     H_const = 20
 
@@ -49,6 +51,7 @@ def main():
             thickness = v2 * H_const
             R = v1 * H_const
             static_single(idx_try, R = R, H = H_const, t = thickness)
+
 
 main()
 
