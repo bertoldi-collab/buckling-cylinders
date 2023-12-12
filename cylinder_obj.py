@@ -109,7 +109,7 @@ class cylinder_model(object):
         makes a model with N [static, frequency] steps; returns the job name
         * max_temp_mult: between [0,1], how much \Delta V/V_0 to remove
         * num_steps: the number of [static, freq] pairs
-        * eig_idx: allows manually specifying the index to pull the imperfection mode from
+        * eig_idx: allows manually specifying the index to pull the imperfection mode from (1-indexed to match odb standard)
         * extra_imper: should be a list of tuples (eig_idx, imperfection)
         '''
         eig_name = '_lin_buckling'
@@ -157,7 +157,7 @@ class cylinder_model(object):
         * is_buckling: default false- does a dyn imp step; if set to true then does a single [static, freq] step
         * temp_set: default None, allows setting final temp manually
         * temp_mult: default None, allows setting multiplier of final temp manually. Only provide one of {temp_mult, temp_set}
-        * eig_idx: default None, allows setting index to pull impefection mode from eig_name manually
+        * eig_idx: default None, allows setting index to pull impefection mode from eig_name manually (1-indexed to match odb standard)
         * eig_name: default '_lin_buckling', defines fil file to pull buckling mode from
         * extra_imper: should be a list of tuples (eig_idx, imperfection)
         * alt_name: default '_post_buckling', defines name of job file
@@ -238,7 +238,7 @@ class cylinder_model(object):
         makes a 2-step model: in step 1 some % volume is removed, in step 2 pressure is applied to the free face
         * temp_mult: between [0,1], how much \Delta V/V_0 to remove in Step-1
         * pressure_app: how much pressure to apply in Step-2 [MPa]
-        * eig_idx: allows manually specifying the index to pull the imperfection mode from
+        * eig_idx: allows manually specifying the index to pull the imperfection mode from (1-indexed to match odb standard)
         '''
         eig_name = '_lin_buckling'
         temp_set = -0.332 * temp_mult
@@ -641,7 +641,7 @@ class cylinder_model(object):
             out_his_nt = his_region_prev.historyOutputs['NT11'].data
             # printAB(out_his_nt)
             if out_his_eig_freq is not None:
-                delta_T = out_his_nt[1][-1]
+                delta_T = out_his_nt[-1][1]
                 eig_freq = np.asarray([out_his_eig_freq[j][1] for j in range(len(out_his_eig_freq))])
                 eig_val = np.asarray([out_his_eig_val[j][1] for j in range(len(out_his_eig_val))])
                 data_all[i,0] = delta_T
@@ -1017,7 +1017,7 @@ class cylinder_model(object):
         K_cap   = 1e9 #Bulk modulus very high K = E/3*(1-2nu)
 
         #Abaqus strain energy for neo-hokean form is
-        # U = C_10 * (I_1 - 3) + 1/D_1(J^el-1)^2 (right part is zero for incomp.)
+        # U = C_10 * (I_1 - 3) + D_1(J^el-1)^2 (right part is zero for incomp.) (D_1 = 2/K iirc)
         # nh_d1_all = 0.1*0.0833 #(smol) david suggested this on 1/20/23
 
         nh_d1_all = 0.0 #(smol) david suggested this on 1/20/23
