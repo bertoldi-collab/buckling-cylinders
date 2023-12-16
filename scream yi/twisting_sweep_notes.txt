@@ -1,0 +1,56 @@
+notes bc I forgot my paper oops
+
+currently running (real):
+141 (mesh size/2), 140 [dyn, mesh size/2]
+
+problems:
+140 [sheared, divide mesh size by 2]
+
+currently running (losing the plot is such a risk):
+128 [dyn], 123 [dyn], 129 [dyn], 135 [dyn], 141 [dyn] [all finished]
+
+overshoot but on plot
+140 [remade]
+
+
+failed:
+134 [remade], 122 (failing right after 0.4) [remade]
+
+
+
+
+123: [didn't twist] 2e-7? --> 4e-6 & max inc 5k --> 10k [working] {2e-7 did not work --> 4e-7 & 0.4 --> 0.5}
+128: [didn't twist] 2e-6 --> 4e-6 & max inc 5k --> 10k {8e-7 did not work --> 2e-6 (at 0.5 already) {old: 4e-7 did not work --> 8e-7 (at 0.5 already)}}
+
+134: 1e-6 & imper mode for 3folds (0.5 & 10k inc) [working]
+old 134: [twist but overshoot + wrong mode?] {2e-6 --> 4e-6 % max inc 5k --> 10k [working] {8e-7 did not work --> 2e-6 & (at 0.5) {old: 4e-7 did not work --> 8e-7 & 0.4 --> 0.5}}}
+
+122: 3e-7 {trying 5e-7 w/ temp_mult = 0.5 & max inc 5k --> 10k} [working]
+old 122: 8e-7 --> 2e-6 {4e-7 --> 8e-7 {0.4 --> 0.5 {[worked but not steady state] 8e-8 --> 4e-7 {2e-8 did not work --> 8e-8 & some meshing things (enhanced hourglass control + 2nd order accuracy (not quadratic!!))}}}}
+
+
+
+to check:
+
+notes on sims I'm tired of running:
+122: started twisting w/ temp_mult = 0.4 and 4e-7, but doesn't seem to twist at 0.5*0.9 and 2e-6!!
+
+a dumb thing to try:
+123/129/135/141: dyn imp
+
+extra notes:
+134 is definitely an overshoot (also it's 4folds while 140 is 3????)
+140 is definitely an overshoot (also it changed from 3 to 4 folds when I increased f from 4e-7 to 8e-7)
+114 is prob slightly an overshoot
+
+113 might not be steady state?
+
+DONE
+120: DONE
+121: [DONE] {[8e-8] but want to run longer 0.4 --> 0.5}
+115: [DONE, overshoot tho] 0.4 --> 0.5 {[worked but did not twist]8e-8 --> 4e-7 {4e-8 did not work --> 8e-8}}
+140: [DONE, overshoot though] 4e-7 --> 8e-7 {2e-7 --> 4e-7 {2e-8 --> 2e-7}}
+122 [dyn]
+129 [dyn, temp_mult = 0.5]
+134 [dyn, running], 
+113 [static, temp_mult = 0.5]
