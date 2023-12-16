@@ -6,26 +6,27 @@ from cylinder_obj import *
 from geo_prop import *
 
 
+
 def damping_sweep(idx_try):
     num_samp = 5
     damping_sweep = 2*np.logspace(-8, -4, num_samp)
 
     for i, stab_factor in enumerate(damping_sweep):
         proj_name = 'bender-static-stable-v' + str(idx_try + i)
-        test = full_shell(project = proj_name, fullProps = geo_prop_bend, imperfection = 0.1)
+        test = full_shell(project = proj_name, fullProps = geo_prop_bend, imperfection = 0.05)
 
         test.stabilization_factor = stab_factor
 
-        jname_lin = test.run_linear_model()
-        jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.5, num_steps = 100, eig_idx = 2)
+        # jname_lin = test.run_linear_model()
+        # jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.5, num_steps = 100)
 
-        run_inp(jname_multi)
+        # run_inp(jname_multi)
 
-        test.post_process_multi_pv()
+        # test.post_process_multi_pv()
         test.post_process_multi_buckle()
 
-        delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
-        delete_extra_files(jname_multi)
+        # delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
+        # delete_extra_files(jname_multi)
 
 def dyn_imp(idx_try, deg_thin = 90, t_thin = 0.224, t_thick = 0.856):
     proj_name = 'bender-dyn-imp-v' + str(idx_try)
@@ -47,6 +48,15 @@ def dyn_imp(idx_try, deg_thin = 90, t_thin = 0.224, t_thick = 0.856):
     delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
     delete_extra_files(jname_nonlin)
 
+def extract_centernodes(idx_try):
+    proj_name = 'bender-dyn-imp-v' + str(idx_try)
+    props_use = geo_prop_bend
+    test = full_shell(project = proj_name, fullProps = props_use, imperfection = 0.002)
+
+    test.post_process_lin_centernodes()
+
+
+
 
 def main():
     # idx_try = 141
@@ -63,12 +73,34 @@ def main():
             t_thin_cur = t_ratio * t_thick_const
             dyn_imp(idx_try, deg_thin = theta, t_thin = t_thin_cur, t_thick = t_thick_const)
 
-main()
+def main_single():
+    idx_try = 143
+    t_thick = 0.92
+    t_thin = 0.23
+
+    dyn_imp(idx_try, t_thin = t_thin, t_thick = t_thick)
+    
+def main_damping():
+    idx_try = 150
+    damping_sweep(idx_try)
+
+main_damping()
+
+# extract_centernodes(141)
+
+# main_damping()
+
+# main()
+# main_single()
 
 #v140: dyn imp bender
 #v141: dyn imp bender w/ new parameters, imperfection = 0.002
 #v142: dyn imp bender w/ same prop as above, but 70 deg thin angle
 
+#v200s: dyn imp sweep
+
+
+#idk what this stuff below is, but it maybe got overwritten oops (might also be pre fixing the rp tho so)
 #v200s: bender multi, damping_sweep = 2*np.logspace(-8, -4, num_samp), steps = 100, max_temp_mult = 0.5, imperfection = 0.05
 #v210s: bender multi, damping_sweep = 2*np.logspace(-8, -4, num_samp), steps = 100, max_temp_mult = 0.5, imperfection = 0.1, eig_idx = 2
 
