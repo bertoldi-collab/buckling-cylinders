@@ -8,7 +8,7 @@
    version="1.1"
    id="svg5"
    sodipodi:docname="supp_fem.svg"
-   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -26,14 +26,16 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.74118968"
-     inkscape:cx="650.30587"
-     inkscape:cy="-559.23606"
+     inkscape:cx="-638.16323"
+     inkscape:cy="636.13946"
      inkscape:window-width="1920"
-     inkscape:window-height="1017"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:window-height="986"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1"
+     inkscape:showpageshadow="0"
+     inkscape:deskcolor="#d1d1d1" />
   <defs
      id="defs2">
     <marker
@@ -1501,7 +1503,7 @@
        x="9.331934"
        y="124.78992"
        ry="1.9155172e-14"
-       inkscape:export-filename="C:\Users\her482\Documents\buckling-cylinders\figures_paper\SI_step_type.png"
+       inkscape:export-filename="SI_step_type.pdf"
        inkscape:export-xdpi="400"
        inkscape:export-ydpi="400" />
     <image
@@ -2510,14 +2512,14 @@
          y="58.591568" />
     </g>
     <rect
-       style="fill:#ffffff;stroke:#0000ff;stroke-width:1.06305;stroke-miterlimit:4;stroke-dasharray:none;stop-color:#000000"
+       style="fill:none;stroke:#0000ff;stroke-width:1.06305;stroke-miterlimit:4;stroke-dasharray:none;stop-color:#000000"
        id="rect11263"
        width="175.46738"
        height="154.08305"
        x="-227.5287"
        y="86.076424"
        ry="3.9279039e-14"
-       inkscape:export-filename="C:\Users\her482\Documents\buckling-cylinders\figures_paper\SI_mode_discussion.png"
+       inkscape:export-filename="SI_mode_discussion.pdf"
        inkscape:export-xdpi="400"
        inkscape:export-ydpi="400" />
     <text
@@ -6176,7 +6178,7 @@
        x="82.190445"
        y="-199.74036"
        ry="2.4355118e-14"
-       inkscape:export-filename="C:\Users\her482\Documents\buckling-cylinders\figures_paper\SI_mode_discussion.png"
+       inkscape:export-filename="si_fem_sch.pdf"
        inkscape:export-xdpi="400"
        inkscape:export-ydpi="400" />
     <text
