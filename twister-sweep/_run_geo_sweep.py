@@ -62,7 +62,7 @@ def main():
 
             thickness = v2 * H_const
             R = v1 * H_const
-            if idx_try == 140:
+            if idx_try == 141:
                 extract_idx(idx_try, R, H_const, thickness)
             # static_single(idx_try, R = R, H = H_const, t = thickness)
 
