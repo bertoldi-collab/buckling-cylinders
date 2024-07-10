@@ -28,12 +28,13 @@ for i in range(len(E_try)):
         test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur, imperfection = 0.002)
         jname_lin = test.run_linear_model()
 
-        jname_nonlin = test.make_nonlin_model(temp_set = 0.6*-0.332)
-        run_inp(jname_nonlin,4)
+        # jname_nonlin = test.make_nonlin_model(temp_set = 0.6*-0.332)
+        # run_inp(jname_nonlin,4)
 
-        test.post_process_pv()
-        delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log', '.dat', '.msg'])
-        delete_extra_files(jname_nonlin)
+        # test.post_process_pv()
+        test.post_process_contraction_twist()
+        # delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log', '.dat', '.msg'])
+        # delete_extra_files(jname_nonlin)
 
         idx_try += 1
 

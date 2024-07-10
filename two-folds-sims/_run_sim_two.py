@@ -23,14 +23,15 @@ for i in range(len(E_try)):
         geo_prop_cur = geoProps(8.8, 44.75, 5, t_cur, E_cur)
 
         test = full_shell(project = proj_name+str(idx_try), simpProps = geo_prop_cur, imperfection = 0.001)
-        jname_lin = test.run_linear_model()
-        jname_nonlin = test.make_nonlin_model(temp_set = 0.6*-0.332)
-        run_inp(jname_nonlin,4)
+        # jname_lin = test.run_linear_model()
+        # jname_nonlin = test.make_nonlin_model(temp_set = 0.6*-0.332)
+        # run_inp(jname_nonlin,4)
 
-        test.post_process_pv()
+        # test.post_process_pv()
+        test.post_process_contraction_twist()
 
-        delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log'])
-        delete_extra_files(jname_nonlin)
+        # delete_extra_files(jname_lin, ['.fil', '.sta', '.odb', '.log'])
+        # delete_extra_files(jname_nonlin)
 
         idx_try += 1
 

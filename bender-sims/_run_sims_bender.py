@@ -10,35 +10,39 @@ from geo_prop import *
 def damping_sweep(idx_try):
     num_samp = 5
     damping_sweep = 2*np.logspace(-8, -4, num_samp)
+    imper = 0.002
 
     for i, stab_factor in enumerate(damping_sweep):
         proj_name = 'bender-static-stable-v' + str(idx_try + i)
-        test = full_shell(project = proj_name, fullProps = geo_prop_bend, imperfection = 0.05)
+        test = full_shell(project = proj_name, fullProps = geo_prop_bend, imperfection = imper)
 
         test.stabilization_factor = stab_factor
 
-        # jname_lin = test.run_linear_model()
-        # jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.5, num_steps = 100)
+        jname_lin = test.run_linear_model()
+        jname_multi = test.make_nonlin_multi_buckle(max_temp_mult = 0.35, num_steps = 100)
 
-        # run_inp(jname_multi)
+        run_inp(jname_multi)
 
-        # test.post_process_multi_pv()
+        test.post_process_multi_pv()
         test.post_process_multi_buckle()
 
-        # delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
-        # delete_extra_files(jname_multi)
+        delete_extra_files(jname_lin, ['.fil', '.sta', '.log', '.dat', '.msg'])
+        delete_extra_files(jname_multi)
 
-def dyn_imp(idx_try, deg_thin = 90, t_thin = 0.224, t_thick = 0.856):
+def dyn_imp(idx_try, deg_thin = 90, t_thin = 0.224, t_thick = 0.856, static = False):
     proj_name = 'bender-dyn-imp-v' + str(idx_try)
 
     rad_thick = (360 - deg_thin)*np.pi/180
+    imper = 0.05
 
     props_use = geoPropsFull(10, 18, 5, t_thick, t_thin, 1.2, 1.2, 1.2, rad_thick)
-    test = full_shell(project = proj_name, fullProps = props_use, imperfection = 0.002)
+    test = full_shell(project = proj_name, fullProps = props_use, imperfection = imper)
+    test.stabilization_factor = 2e-9
 
 
     jname_lin = test.run_linear_model()
-    jname_nonlin = test.make_nonlin_model(temp_mult = 0.5)
+    # jname_nonlin = test.make_nonlin_model(temp_mult = 0.25, is_buckling = static)
+    jname_nonlin = test.make_static_dyn_model(temp_mult_static = 0.23, temp_mult_final = 0.002)
 
     run_inp(jname_nonlin)
 
@@ -74,28 +78,36 @@ def main():
             dyn_imp(idx_try, deg_thin = theta, t_thin = t_thin_cur, t_thick = t_thick_const)
 
 def main_single():
-    idx_try = 143
-    t_thick = 0.92
-    t_thin = 0.23
+    idx_try = 147
+    # t_thick = 0.92
+    # t_thin = 0.23
 
-    dyn_imp(idx_try, t_thin = t_thin, t_thick = t_thick)
+    dyn_imp(idx_try, static = True)
     
 def main_damping():
-    idx_try = 150
+    idx_try = 160
     damping_sweep(idx_try)
 
-main_damping()
+# main_damping()
 
-# extract_centernodes(141)
+# extract_centernodes(145)
 
 # main_damping()
 
 # main()
-# main_single()
+main_single()
+
+#v150s: damping sweep [DO NOT OVERWRITE]
+#v160s: damping sweep w/ imper = 0.002 (max_temp_mult = 0.35 so finer steps)
 
 #v140: dyn imp bender
 #v141: dyn imp bender w/ new parameters, imperfection = 0.002
 #v142: dyn imp bender w/ same prop as above, but 70 deg thin angle
+#v143: dyn imp bender w/ t_thick = 0.92, t_thin = 0.23
+#v144: static bender w/ default parameters, same as v141 but static, stab_fac = 2e-8 (imper = 0.002)
+#v145: static bender, stab_fac = 2e-9
+#v146: static bender, imper = 0.05, stab_fac = 2e-9 (temp_mult = 0.25)
+#v147: static/dyn bender, imper = 0.002
 
 #v200s: dyn imp sweep
 
